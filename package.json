@@ -1,0 +1,42 @@
+{
+  "name": "opencode-plugin-swarm",
+  "version": "1.0.0",
+  "description": "Run several OpenCode models together as a swarm — mixture, debate, divide, relay and vote — with an optional desktop dashboard.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./tui": "./tui.ts",
+    "./rpc": "./rpc.ts"
+  },
+  "files": [
+    "*.ts",
+    "desktop/*.mjs",
+    "desktop/swarm-panel.js",
+    "skills",
+    "swarm.example.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "swarm",
+    "multi-model",
+    "mixture-of-agents",
+    "debate",
+    "consensus",
+    "llm"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "selftest": "node desktop/selftest.mjs",
+    "panel:install": "node desktop/install.mjs",
+    "panel:uninstall": "node desktop/install.mjs --uninstall",
+    "panel:verify": "node desktop/verify.mjs",
+    "harness": "node desktop/harness.mjs"
+  }
+}
