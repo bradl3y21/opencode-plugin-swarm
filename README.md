@@ -20,6 +20,11 @@ its own.
   `%LOCALAPPDATA%\Programs\@opencodedesktop\resources\app.asar`. The strategies,
   the `swarm` tool, `/swarm` and the TUI panel work on any platform.
 
+<img src="docs/panel.png" alt="The Swarm dashboard in the OpenCode desktop window: strategy and worker settings, model selection, a finished mixture run with its steps, and the merged result." width="420">
+
+*The dashboard: pick a strategy, choose models, give it a task, and watch each
+step — then read or copy the merged answer.*
+
 ```
         ┌─────────────┐
  task → │  members    │ → GLM-5.3 ─┐
