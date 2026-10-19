@@ -29,7 +29,10 @@ const check = (label, ok, detail = "") => {
 }
 
 if (!fs.existsSync(backup)) {
-  console.error(`No backup at ${backup}; nothing to compare against.`)
+  console.error(
+    `No backup at ${backup}; nothing to compare against.\n` +
+      "The dashboard does not appear to be installed. Install it with `node install.mjs` first.",
+  )
   process.exitCode = 1
 } else {
   const before = readAsar(backup)
