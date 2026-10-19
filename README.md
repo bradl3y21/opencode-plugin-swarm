@@ -160,7 +160,7 @@ skill into `.opencode/skills/`:
 
 ```sh
 # from a clone of this repository
-git clone <this-repo-url> "<workspace>/.opencode/plugins/swarm"
+git clone https://github.com/bradl3y21/opencode-plugin-swarm.git "<workspace>/.opencode/plugins/swarm"
 mkdir -p "<workspace>/.opencode/skills"
 cp -r "<workspace>/.opencode/plugins/swarm/skills/swarm" "<workspace>/.opencode/skills/swarm"
 ```

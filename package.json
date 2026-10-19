@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "description": "Run several OpenCode models together as a swarm — mixture, debate, divide, relay and vote — with an optional desktop dashboard.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bradl3y21/opencode-plugin-swarm.git"
+  },
+  "homepage": "https://github.com/bradl3y21/opencode-plugin-swarm#readme",
+  "bugs": {
+    "url": "https://github.com/bradl3y21/opencode-plugin-swarm/issues"
+  },
   "type": "module",
   "main": "./index.ts",
   "exports": {
