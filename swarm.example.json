@@ -1,11 +1,13 @@
 {
   "enabled": true,
   "strategy": "mixture",
+
   "members": [],
   "aggregator": null,
   "planner": null,
   "judge": null,
   "autoMembers": 4,
+
   "workerMode": "text",
   "rounds": 2,
   "concurrency": 4,
@@ -13,6 +15,7 @@
   "agentTimeoutMs": 900000,
   "maxOutputChars": 6000,
   "keepWorkerSessions": true,
+
   "streamToSession": true,
   "tool": true,
   "command": true,
