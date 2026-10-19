@@ -1,15 +1,15 @@
 {
-  "name": "opencode-plugin-swarm",
-  "version": "1.0.0",
-  "description": "Run several OpenCode models together as a swarm — mixture, debate, divide, relay and vote — with an optional desktop dashboard.",
+  "name": "opencode-quorum",
+  "version": "1.1.0",
+  "description": "Assemble a quorum of OpenCode models for one task — mixture, debate, divide, relay and vote — with an optional desktop dashboard.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bradl3y21/opencode-plugin-swarm.git"
+    "url": "git+https://github.com/bradl3y21/opencode-quorum.git"
   },
-  "homepage": "https://github.com/bradl3y21/opencode-plugin-swarm#readme",
+  "homepage": "https://github.com/bradl3y21/opencode-quorum#readme",
   "bugs": {
-    "url": "https://github.com/bradl3y21/opencode-plugin-swarm/issues"
+    "url": "https://github.com/bradl3y21/opencode-quorum/issues"
   },
   "type": "module",
   "main": "./index.ts",
@@ -21,21 +21,21 @@
   "files": [
     "*.ts",
     "desktop/*.mjs",
-    "desktop/swarm-panel.js",
+    "desktop/quorum-panel.js",
     "docs",
     "skills",
-    "swarm.example.json",
+    "quorum.example.json",
     "README.md",
     "LICENSE"
   ],
   "keywords": [
     "opencode",
     "opencode-plugin",
-    "swarm",
+    "quorum",
     "multi-model",
     "mixture-of-agents",
-    "debate",
     "consensus",
+    "debate",
     "llm"
   ],
   "engines": {

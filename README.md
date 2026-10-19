@@ -1,12 +1,20 @@
-# Swarm for OpenCode
+# Quorum for OpenCode
+
+[![CI](https://github.com/bradl3y21/opencode-quorum/actions/workflows/ci.yml/badge.svg)](https://github.com/bradl3y21/opencode-quorum/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Run several OpenCode models on one task at the same time and merge what they
-produce into a single answer. Five ways to combine them, a `swarm` tool and a
-`/swarm` command, and an optional dashboard inside the desktop window.
+produce into a single answer. Five ways to combine them, a `quorum` tool and a
+`/quorum` command, and an optional dashboard inside the desktop window.
 
 It uses the models you already have enabled in OpenCode. It has no API keys of
 its own.
 
+> **Renamed in 1.1.** This plugin was published as `opencode-plugin-swarm`. It
+> is now `opencode-quorum` — "swarm" in this ecosystem has come to mean a team
+> of agents building software, which is a different thing. A configuration file
+> written as `swarm.json` is still read, and the first write migrates it.
+>
 > **Unofficial.** Not affiliated with OpenCode or its maintainers. The dashboard
 > is an optional patch to the desktop app — read [Safety](#safety) before
 > installing it. Nothing else in this plugin modifies OpenCode.
@@ -18,9 +26,9 @@ its own.
   runs inside OpenCode).
 - The **dashboard is Windows only**, because it patches
   `%LOCALAPPDATA%\Programs\@opencodedesktop\resources\app.asar`. The strategies,
-  the `swarm` tool, `/swarm` and the TUI panel work on any platform.
+  the `quorum` tool, `/quorum` and the TUI panel work on any platform.
 
-<img src="docs/panel.png" alt="The Swarm dashboard in the OpenCode desktop window: strategy and worker settings, model selection, a finished mixture run with its steps, and the merged result." width="420">
+<img src="docs/panel.png" alt="The Quorum dashboard in the OpenCode desktop window: strategy and worker settings, model selection, a finished mixture run with its steps, and the merged result." width="420">
 
 *The dashboard: pick a strategy, choose models, give it a task, and watch each
 step — then read or copy the merged answer.*
@@ -37,15 +45,15 @@ step — then read or copy the merged answer.*
 
 | Surface | Where it shows up |
 | --- | --- |
-| **Dashboard** | Optional, Windows only. A **Swarm** button in the title bar beside *Home* / *New session*, and a **Swarm** row above *Settings* on the home screen: pick models and strategy, type a task, watch every step live, read and copy the merged result. |
-| **`/swarm` command** | In any client's command menu. `/swarm <task>` runs a swarm; `/swarm debate <task>` forces a strategy; `/swarm status` lists recent runs. |
-| **`swarm` tool** | The agent can delegate to the swarm itself, and the tool card shows live per-model progress. |
+| **Dashboard** | Optional, Windows only. A **Quorum** button in the title bar beside *Home* / *New session*, and a **Quorum** row above *Settings* on the home screen: pick models and strategy, type a task, watch every step live, read and copy the merged result. |
+| **`/quorum` command** | In any client's command menu. `/quorum <task>` runs a quorum; `/quorum debate <task>` forces a strategy; `/quorum status` lists recent runs. |
+| **`quorum` tool** | The agent can delegate to the quorum itself, and the tool card shows live per-model progress. |
 | **Timeline** | A run started from a session also mirrors its progress into that session, so you can watch it in the chat. |
 | **Terminal panel** | A TUI panel with the same features, for when you use the terminal client. |
 
-## A swarm of one model
+## A quorum of one model
 
-`copies` runs each member several times, which is how you swarm a *single* model:
+`copies` runs each member several times, which is how you quorum a *single* model:
 
 ```json
 { "strategy": "vote", "members": ["opencode-go/gpt-6-luna"], "copies": 4 }
@@ -62,12 +70,12 @@ make the copies disagree in useful ways and give the aggregator something real t
 merge. `vote` is the natural strategy for it; `debate` is the odd one out, since a
 model would be critiquing its own copies.
 
-The panel exposes this as **Copies** next to Workers, and the `swarm` tool takes a
+The panel exposes this as **Copies** next to Workers, and the `quorum` tool takes a
 `copies` argument.
 
 ## Choosing models
 
-Leave `members` empty and the swarm chooses for you:
+Leave `members` empty and the quorum chooses for you:
 
 1. it starts from the model **you are already using** for the project;
 2. then takes one model from **each provider**, because different providers are
@@ -95,21 +103,21 @@ be matched is reported in the run's notes rather than silently dropped.
 
 ## For agents
 
-This is set up so an agent in a session can use a swarm without being told how:
+This is set up so an agent in a session can use a quorum without being told how:
 
-- **A skill** at `.opencode/skills/swarm/SKILL.md`. OpenCode advertises it when a
+- **A skill** at `.opencode/skills/quorum/SKILL.md`. OpenCode advertises it when a
   task looks like it deserves more than one model's opinion, and the agent loads
-  it with the `skill` tool. It covers when a swarm is worth the cost, which
+  it with the `skill` tool. It covers when a quorum is worth the cost, which
   strategy fits which question, and how to read a run's warnings. The field-level
   detail lives beside it in `references/configuration.md`, so it loads only when
   needed.
-- **A `configure` action** on the `swarm` tool, so an agent can set the defaults
+- **A `configure` action** on the `quorum` tool, so an agent can set the defaults
   up rather than only run once. It validates: a bad strategy or an out-of-range
   `copies` is reported back and *not* written, rather than saved as a
   configuration the plugin cannot use.
 
-An agent can therefore be asked to "set up a swarm of luna 6 for reviews", and it
-will save the roster, strategy and copies itself. Editing `.opencode/swarm.json`
+An agent can therefore be asked to "set up a quorum of luna 6 for reviews", and it
+will save the roster, strategy and copies itself. Editing `.opencode/quorum.json`
 by hand works too.
 
 ## Where it lives
@@ -117,9 +125,9 @@ by hand works too.
 The panel is opened from OpenCode's own interface rather than from a floating
 button of its own:
 
-- **Title bar** — a Swarm button beside *Home* and *New session*, visible in every
+- **Title bar** — a Quorum button beside *Home* and *New session*, visible in every
   view.
-- **Sidebar** — a **Swarm** entry directly above *Settings* and *Help* on the home
+- **Sidebar** — a **Quorum** entry directly above *Settings* and *Help* on the home
   screen.
 - Both are **clones of the real controls** (the `New session` button and the
   `Settings` row), so they inherit OpenCode's exact sizing, spacing, hover, focus
@@ -128,7 +136,7 @@ button of its own:
 - The icon is OpenCode's own sprite glyph (`opencode-v2-icon-models`), not a
   custom drawing, so its weight matches the icons around it.
 - If neither anchor exists — a future layout change, or a narrow window where the
-  sidebar collapses — a floating **Swarm** button appears instead, so the feature
+  sidebar collapses — a floating **Quorum** button appears instead, so the feature
   can never become unreachable.
 
 The drawer starts below the title bar, measured at runtime from the app's own
@@ -137,7 +145,7 @@ The drawer starts below the title bar, measured at runtime from the app's own
 
 Editing configuration is **only possible through a real user interaction**: the
 panel ignores untrusted events, so a script or an automated client in the page
-cannot rewrite `swarm.json`.
+cannot rewrite `quorum.json`.
 
 ## Strategies
 
@@ -153,31 +161,31 @@ cannot rewrite `swarm.json`.
 
 The plugin is two independent parts, and you can take either:
 
-1. **The server-side plugin** — the five strategies, the `swarm` tool, `/swarm`
+1. **The server-side plugin** — the five strategies, the `quorum` tool, `/quorum`
    and the TUI panel. No app changes, no restart.
 2. **The dashboard** — optional, Windows only, and the only part that patches
    the desktop app.
 
 ### 1. The server-side plugin
 
-Copy the `swarm` folder into your workspace's `.opencode/plugins/`, and the
+Copy the `quorum` folder into your workspace's `.opencode/plugins/`, and the
 skill into `.opencode/skills/`:
 
 ```sh
 # from a clone of this repository
-git clone https://github.com/bradl3y21/opencode-plugin-swarm.git "<workspace>/.opencode/plugins/swarm"
+git clone https://github.com/bradl3y21/opencode-quorum.git "<workspace>/.opencode/plugins/quorum"
 mkdir -p "<workspace>/.opencode/skills"
-cp -r "<workspace>/.opencode/plugins/swarm/skills/swarm" "<workspace>/.opencode/skills/swarm"
+cp -r "<workspace>/.opencode/plugins/quorum/skills/quorum" "<workspace>/.opencode/skills/quorum"
 ```
 
 No dependencies to install — the plugin uses the runtime OpenCode provides.
 
 Restart OpenCode (or reload plugins). That is all: settings come from defaults
-until you create `.opencode/swarm.json` — start from `swarm.example.json`.
+until you create `.opencode/quorum.json` — start from `quorum.example.json`.
 
-If another plugin already registers a tool called `swarm` — for example the
-unrelated npm package `opencode-swarm` — disable one of them; two tools cannot
-share a name. This package is `opencode-plugin-swarm`.
+If another plugin already registers a tool called `quorum` — for example the
+unrelated npm package `opencode-quorum` — disable one of them; two tools cannot
+share a name. This package is `opencode-quorum`.
 
 ### 2. The dashboard (optional, Windows)
 
@@ -185,7 +193,7 @@ The desktop app has no plugin UI of its own, so the dashboard is a patch to
 `app.asar`. It is reversible and it verifies itself, but it is still a patch:
 
 ```sh
-cd .opencode/plugins/swarm/desktop
+cd .opencode/plugins/quorum/desktop
 node selftest.mjs        # proves the archive writer is lossless
 node install.mjs         # backs up app.asar, then adds the panel
 ```
@@ -201,7 +209,7 @@ node install-when-free.mjs     # leave it running, then quit OpenCode whenever
 It refuses to act unless no `OpenCode.exe` is running **and** the archive is
 actually writable (so a slow app start cannot be patched mid-boot), runs the
 self-test first, and logs every step to
-`~/.local/share/opencode/log/swarm-install.log`. (The watcher is Windows-only;
+`~/.local/share/opencode/log/quorum-install.log`. (The watcher is Windows-only;
 elsewhere, quit the app and run `install.mjs` directly.) After it finishes, just
 start OpenCode — the panel is already there. To confirm the result at any time:
 
@@ -209,7 +217,7 @@ start OpenCode — the panel is already there. To confirm the result at any time
 node verify.mjs                # compares the patched archive to the backup
 ```
 
-`install.mjs` copies `resources/app.asar` to `app.asar.swarm-backup` before its
+`install.mjs` copies `resources/app.asar` to `app.asar.quorum-backup` before its
 first write, and `node install.mjs --uninstall` restores that copy byte for byte.
 `node install.mjs --dry-run` shows exactly what would change without writing.
 
@@ -226,7 +234,7 @@ without restarting OpenCode, run the harness instead — it serves the real pane
 against the running server:
 
 ```sh
-cd .opencode/plugins/swarm/desktop && node harness.mjs
+cd .opencode/plugins/quorum/desktop && node harness.mjs
 # then open http://127.0.0.1:8799/
 ```
 
@@ -234,11 +242,11 @@ cd .opencode/plugins/swarm/desktop && node harness.mjs
 
 What the dashboard patch does:
 
-- adds one file, `/out/renderer/swarm-panel.js`, and replaces `index.html` with
+- adds one file, `/out/renderer/quorum-panel.js`, and replaces `index.html` with
   an identical copy carrying two extra `<script>` tags;
 - **appends** to the archive: every existing entry keeps its offset, size and
   bytes, and the selftest proves it;
-- writes `app.asar.swarm-backup` before the first write, and `--uninstall`
+- writes `app.asar.quorum-backup` before the first write, and `--uninstall`
   restores it byte for byte;
 - launches the app once after installing to prove it still starts, and restores
   the backup automatically if it does not.
@@ -261,37 +269,37 @@ What it cannot promise:
   node install.mjs --uninstall
   ```
 
-  Last resort: copy `app.asar.swarm-backup` over `app.asar`.
+  Last resort: copy `app.asar.quorum-backup` over `app.asar`.
 
 ## Use
 
 ### Dashboard
 
-Click **Swarm** in the title bar, beside *Home* and *New session* — or the
-**Swarm** row above *Settings* on the home screen.
+Click **Quorum** in the title bar, beside *Home* and *New session* — or the
+**Quorum** row above *Settings* on the home screen.
 
 - **Strategy** — the dropdown writes to your config straight away.
 - **Members** — click models to add or remove them. With no members chosen the
-  swarm picks a diverse roster automatically.
+  quorum picks a diverse roster automatically.
 - **Workers** — `text` (plain model calls) or `agent` (real sessions that can
   read and edit your files).
-- **Task** — what the swarm should work on.
-- **Run swarm** — start it. The board updates as each step runs; click any step
+- **Task** — what the quorum should work on.
+- **Run quorum** — start it. The board updates as each step runs; click any step
   to read its full output. **copy** copies the merged result.
 
 ### Command
 
 ```
-/swarm Rewrite this function to avoid the nested loop
-/swarm debate Is a monorepo right for a 5-person team?
-/swarm status
-/swarm help
+/quorum Rewrite this function to avoid the nested loop
+/quorum debate Is a monorepo right for a 5-person team?
+/quorum status
+/quorum help
 ```
 
 Results are posted back into the session as **synthetic messages**: they appear in
 the timeline and stay in the conversation's context, but they do not force a model
-turn, so a swarm costs exactly what the swarm costs. To have the agent act on an
-answer, just say so — or let the agent call the `swarm` tool itself.
+turn, so a quorum costs exactly what the quorum costs. To have the agent act on an
+answer, just say so — or let the agent call the `quorum` tool itself.
 
 ### Tool
 
@@ -307,15 +315,15 @@ The tool takes `action` (`run`, `status`, `cancel`, `models`), `task`,
 Settings merge, later wins:
 
 1. built-in defaults
-2. `~/.config/opencode/swarm.json` (global)
-3. `<project>/.opencode/swarm.json` (project)
-4. `OPENCODE_SWARM_*` environment variables
+2. `~/.config/opencode/quorum.json` (global)
+3. `<project>/.opencode/quorum.json` (project)
+4. `OPENCODE_QUORUM_*` environment variables
 5. plugin `options` in `opencode.json(c)`
 
 The dashboard writes the project file, and the plugin re-reads it immediately —
 **no restart needed** for any setting below except `tool` and `command`.
 
-Copy `.opencode/swarm.example.json` to `.opencode/swarm.json` to start.
+Copy `.opencode/quorum.example.json` to `.opencode/quorum.json` to start.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
@@ -328,7 +336,7 @@ Copy `.opencode/swarm.example.json` to `.opencode/swarm.json` to start.
 | `autoMembers` | `4` | How many models automatic selection picks. |
 | `workerMode` | `text` | `text` or `agent`. See the warning below. |
 | `rounds` | `2` | Debate rounds, including the opening one. |
-| `copies` | `1` | Run each member this many times (1–8). Above 1, a swarm of the same model. |
+| `copies` | `1` | Run each member this many times (1–8). Above 1, a quorum of the same model. |
 | `concurrency` | `4` | How many workers run at once. |
 | `timeoutMs` | `180000` | Per-worker timeout for text workers. |
 | `agentTimeoutMs` | `900000` | Per-worker timeout for agent workers. A full session doing real work can take many minutes. |
@@ -336,12 +344,12 @@ Copy `.opencode/swarm.example.json` to `.opencode/swarm.json` to start.
 | `keepWorkerSessions` | `true` | Keep agent-mode worker sessions so you can inspect them. |
 | `streamToSession` | `true` | Mirror run progress into the originating session. |
 | `tool` | `true` | Register the agent tool. **Needs a reload.** |
-| `command` | `true` | Register `/swarm`. **Needs a reload.** |
-| `debugLog` | `true` | Append activity to `~/.local/share/opencode/log/swarm.log`. |
+| `command` | `true` | Register `/quorum`. **Needs a reload.** |
+| `debugLog` | `true` | Append activity to `~/.local/share/opencode/log/quorum.log`. |
 
 ### Environment variables
 
-`OPENCODE_SWARM_ENABLED`, `_STRATEGY`, `_MEMBERS` (comma separated),
+`OPENCODE_QUORUM_ENABLED`, `_STRATEGY`, `_MEMBERS` (comma separated),
 `_AGGREGATOR`, `_PLANNER`, `_JUDGE`, `_AUTO_MEMBERS`, `_WORKER_MODE`, `_ROUNDS`,
 `_CONCURRENCY`, `_TIMEOUT_MS`, `_AGENT_TIMEOUT_MS`, `_MAX_OUTPUT_CHARS`,
 `_KEEP_WORKER_SESSIONS`, `_STREAM`, `_TOOL`, `_COMMAND`, `_DEBUG_LOG`.
@@ -355,7 +363,7 @@ also the risk:
 - Every member works on the same checkout. Two models editing the same file will
   conflict. For anything destructive, use a worktree or keep `workerMode` on
   `text` and do the edits yourself.
-- Worker sessions are named `swarm · <role> · <model>` and nested under the
+- Worker sessions are named `quorum · <role> · <model>` and nested under the
   session that started the run. Set `keepWorkerSessions: false` to have them
   removed once their answer is harvested.
 - Agent runs are much slower and more expensive than text runs.
@@ -377,7 +385,7 @@ smallest bill.
 
 | File | Purpose |
 | --- | --- |
-| `index.ts` | Server plugin: config, RPC, the `/swarm` command and the agent tool. |
+| `index.ts` | Server plugin: config, RPC, the `/quorum` command and the agent tool. |
 | `engine.ts` | The orchestrator: roster, workers, the five strategies, run state. |
 | `models.ts` | Reads OpenCode's model list and picks a diverse roster. |
 | `prompts.ts` | Prompts for every role, and JSON extraction for the planner/judge. |
@@ -385,7 +393,7 @@ smallest bill.
 | `settings.ts` | Tool-argument validation for saved settings (unit-testable, no runtime imports). |
 | `rpc.ts` | The RPC contract shared by the dashboard and the terminal UI. |
 | `tui.ts` | Terminal panel (terminal client only). |
-| `log.ts` | `~/.local/share/opencode/log/swarm.log`. |
+| `log.ts` | `~/.local/share/opencode/log/quorum.log`. |
 | `desktop/install.mjs` | Adds the dashboard to `app.asar`, reversibly. |
 | `desktop/install-when-free.mjs` | Waits for the app to close, then installs by itself. |
 | `desktop/selftest.mjs` | Proves the archive writer cannot corrupt the app. |
@@ -393,9 +401,11 @@ smallest bill.
 | `desktop/verify.mjs` | Proves the patch changed exactly two entries and nothing else. |
 | `desktop/harness.mjs` | Runs the real panel in a browser against the live server — no app changes, no restart. |
 | `desktop/mirror-harness.mjs` | Proxies OpenCode's *entire* web UI into a browser (with the same patch applied), so UI integration can be developed against the real interface. |
-| `desktop/swarm-panel.js` | The dashboard itself (dependency-free). |
-| `skills/swarm/` | The agent-facing skill and its field reference — copy into `.opencode/skills/`. |
-| `swarm.example.json` | Default settings, ready to copy to `.opencode/swarm.json`. |
+| `desktop/quorum-panel.js` | The dashboard itself (dependency-free). |
+| `desktop/fixture.mjs` | Builds a minimal archive so the installer tests run on a machine with no app installed. |
+| `.github/workflows/ci.yml` | Runs the syntax check, the self-test and the installer test on every push. |
+| `skills/quorum/` | The agent-facing skill and its field reference — copy into `.opencode/skills/`. |
+| `quorum.example.json` | Default settings, ready to copy to `.opencode/quorum.json`. |
 
 ## Notes and limits
 
@@ -406,7 +416,7 @@ smallest bill.
   marked `cancelled` rather than quietly completing, and cancelling twice is a
   no-op.
 - **Run history is in memory.** It survives the session but not a plugin reload
-  or a service restart; `/swarm status` and the dashboard show what the current
+  or a service restart; `/quorum status` and the dashboard show what the current
   process remembers.
 - **`maxOutputChars` is a real cost control.** Every member's answer is pasted
   into the aggregator's prompt, so a chatty panel is expensive to merge.
@@ -418,13 +428,13 @@ smallest bill.
   you have actually seen work.
 - **The dashboard needs no configuration.** It reads the server origin and
   credentials off the app's own API traffic, so it works whatever port the
-  background service picked. It also discovers which project the swarm RPC
+  background service picked. It also discovers which project the quorum RPC
   answers for by probing the app's own recent sessions, so a restart that opens
   the app's home project first does not leave the panel pointing at the wrong
-  place. For debugging, `window.__swarmPanel.state()` in devtools reports what it
+  place. For debugging, `window.__quorumPanel.state()` in devtools reports what it
   thinks is going on.
 - **After the app updates**, re-run `install.mjs` — a new version replaces
-  `app.asar`. Your `swarm.json` and this plugin are untouched by updates.
+  `app.asar`. Your `quorum.json` and this plugin are untouched by updates.
 
 ## License
 
@@ -433,6 +443,6 @@ MIT — see [LICENSE](LICENSE).
 ## Uninstall
 
 ```sh
-cd .opencode/plugins/swarm/desktop && node install.mjs --uninstall   # remove the dashboard
-rm -rf .opencode/plugins/swarm                                        # remove the plugin
+cd .opencode/plugins/quorum/desktop && node install.mjs --uninstall   # remove the dashboard
+rm -rf .opencode/plugins/quorum                                        # remove the plugin
 ```

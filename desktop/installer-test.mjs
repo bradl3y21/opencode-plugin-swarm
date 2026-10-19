@@ -12,9 +12,10 @@ import path from "node:path"
 import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { findAsar, leaves, readAsar } from "./install.mjs"
+import { resolveArchive } from "./fixture.mjs"
 
 const here = path.dirname(fileURLToPath(import.meta.url))
-const work = path.join(os.tmpdir(), "swarm-asar-test")
+const work = path.join(os.tmpdir(), "quorum-asar-test")
 fs.rmSync(work, { recursive: true, force: true })
 fs.mkdirSync(work, { recursive: true })
 
@@ -25,13 +26,19 @@ const check = (label, ok, detail = "") => {
 }
 
 /**
- * The archive to test against: the untouched backup when the panel is installed.
- * Testing against a patched archive would make "entry count grew by one" fail for
- * the right reason and hide the real invariant.
+ * The archive to test against: the untouched backup when the panel is installed,
+ * otherwise the installed app, otherwise a fixture so this runs anywhere.
  */
 function sourceArchive() {
-  const installed = findAsar()
-  const backup = `${installed}.swarm-backup`
+  const flag = process.argv.indexOf("--asar")
+  if (flag !== -1) return process.argv[flag + 1]
+  let installed
+  try {
+    installed = findAsar()
+  } catch {
+    return resolveArchive()
+  }
+  const backup = `${installed}.quorum-backup`
   return fs.existsSync(backup) ? backup : installed
 }
 
@@ -87,7 +94,7 @@ for (const isCase of [
   )
   check(
     "the panel was appended at the end",
-    Number(afterEntries.get("/out/renderer/swarm-panel.js")?.split(":")[0]) === beforeBlob.length,
+    Number(afterEntries.get("/out/renderer/quorum-panel.js")?.split(":")[0]) === beforeBlob.length,
   )
   check("entry count grew by exactly one", afterEntries.size === beforeEntries.size + 1)
 
@@ -95,7 +102,7 @@ for (const isCase of [
   const htmlBytes = after.blob
     .subarray(Number(html.split(":")[0]), Number(html.split(":")[0]) + Number(html.split(":")[1]))
     .toString("utf8")
-  check("index.html carries the marker", htmlBytes.includes("<!-- swarm-dashboard -->"))
+  check("index.html carries the marker", htmlBytes.includes("<!-- quorum-dashboard -->"))
 
   // And the separate verifier agrees.
   const verified = run("verify.mjs", ["--asar", target])

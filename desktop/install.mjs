@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Swarm dashboard installer for the OpenCode desktop app.
+ * Quorum dashboard installer for the OpenCode desktop app.
  *
  * The desktop app is an Electron bundle whose window is loaded from
  * `resources/app.asar`. This script adds one file to that archive and appends a
- * single `<script>` tag to `out/renderer/index.html`, which is how the swarm
+ * single `<script>` tag to `out/renderer/index.html`, which is how the quorum
  * panel gets into the real app window.
  *
  * Safety
  * ------
- * - The original archive is copied to `app.asar.swarm-backup` before the first
+ * - The original archive is copied to `app.asar.quorum-backup` before the first
  *   write, and `--uninstall` restores it byte for byte.
  * - `--dry-run` reports exactly what would change without touching anything.
  * - The archive is written to a temporary file and renamed into place, so an
@@ -29,9 +29,9 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-const MARKER_START = "<!-- swarm-dashboard -->"
-const MARKER_END = "<!-- /swarm-dashboard -->"
-const PANEL_ENTRY = "/out/renderer/swarm-panel.js"
+const MARKER_START = "<!-- quorum-dashboard -->"
+const MARKER_END = "<!-- /quorum-dashboard -->"
+const PANEL_ENTRY = "/out/renderer/quorum-panel.js"
 const HTML_ENTRY = "/out/renderer/index.html"
 
 /**
@@ -41,9 +41,9 @@ const HTML_ENTRY = "/out/renderer/index.html"
  * which is how the panel learns how to talk to the server.
  */
 const NET_CAPTURE = `(function(){
-if(window.__swarmNet)return;
+if(window.__quorumNet)return;
 var net={origin:null,headers:{},listeners:[],ready:false};
-window.__swarmNet=net;
+window.__quorumNet=net;
 function notify(){net.ready=!!net.origin;for(var i=0;i<net.listeners.length;i++){try{net.listeners[i]()}catch(e){}}}
 function isApi(u){return typeof u==="string"&&u.indexOf("/api/")!==-1}
 function remember(u,h){
@@ -76,9 +76,9 @@ if(of)window.fetch=function(input,init){
 };
 try{
   var xo=XMLHttpRequest.prototype.open,xs=XMLHttpRequest.prototype.setRequestHeader;
-  XMLHttpRequest.prototype.open=function(m,u){this.__swarmUrl=u;try{rememberAbsolute(String(u))}catch(e){};return xo.apply(this,arguments)};
+  XMLHttpRequest.prototype.open=function(m,u){this.__quorumUrl=u;try{rememberAbsolute(String(u))}catch(e){};return xo.apply(this,arguments)};
   XMLHttpRequest.prototype.setRequestHeader=function(n,v){
-    try{if(this.__swarmUrl&&isApi(String(this.__swarmUrl)))remember(String(this.__swarmUrl),{[n]:v})}catch(e){}
+    try{if(this.__quorumUrl&&isApi(String(this.__quorumUrl)))remember(String(this.__quorumUrl),{[n]:v})}catch(e){}
     return xs.apply(this,arguments);
   };
 }catch(e){}
@@ -226,30 +226,48 @@ function ensureFileNode(header, target) {
 // Patching
 // ---------------------------------------------------------------------------
 
+/**
+ * Marker blocks this plugin has used. The plugin was called `swarm` before 1.1,
+ * and an app patched then still carries that block: leaving it in place would
+ * load two panels, so any older block is removed before the current one is
+ * written.
+ */
+const MARKERS = [
+  { start: MARKER_START, end: MARKER_END },
+  { start: "<!-- swarm-dashboard -->", end: "<!-- /swarm-dashboard -->" },
+]
+
+/** Removes every known marker block, whatever it contains. */
+function stripBlocks(html) {
+  let out = html
+  for (const marker of MARKERS) {
+    for (;;) {
+      const start = out.indexOf(marker.start)
+      if (start === -1) break
+      const end = out.indexOf(marker.end, start)
+      if (end === -1) throw new Error("index.html has a broken dashboard marker block")
+      out = out.slice(0, start) + out.slice(end + marker.end.length)
+    }
+  }
+  return out
+}
+
 function patchHtml(html) {
   // The marker block carries no surrounding whitespace so that removing it
   // restores the byte-exact original. It is placed before the app's own module
-  // script so the network capture is installed first.
-  const block = `${MARKER_START}<script>${NET_CAPTURE}</script><script type="module" src="./swarm-panel.js"></script>${MARKER_END}`
-  const start = html.indexOf(MARKER_START)
-  if (start !== -1) {
-    const end = html.indexOf(MARKER_END)
-    if (end === -1) throw new Error("index.html has a broken swarm marker block")
-    return html.slice(0, start) + block + html.slice(end + MARKER_END.length)
-  }
-  const moduleTag = html.indexOf('<script type="module"')
-  if (moduleTag !== -1) return `${html.slice(0, moduleTag)}${block}${html.slice(moduleTag)}`
-  const head = html.lastIndexOf("</head>")
-  if (head === -1) throw new Error("could not find </head> in index.html")
-  return `${html.slice(0, head)}${block}${html.slice(head)}`
+  // script so the network capture is installed first. Any older block is
+  // stripped first, so re-installing replaces the panel rather than adding a
+  // second one.
+  const block = `${MARKER_START}<script>${NET_CAPTURE}</script><script type="module" src="./quorum-panel.js"></script>${MARKER_END}`
+  const base = stripBlocks(html)
+  const moduleTag = base.indexOf('<script type="module"')
+  const at = moduleTag === -1 ? base.lastIndexOf("</head>") : moduleTag
+  if (at === -1) throw new Error("could not find </head> in index.html")
+  return `${base.slice(0, at)}${block}${base.slice(at)}`
 }
 
 function unpatchHtml(html) {
-  const start = html.indexOf(MARKER_START)
-  if (start === -1) return html
-  const end = html.indexOf(MARKER_END)
-  if (end === -1) return html
-  return html.slice(0, start) + html.slice(end + MARKER_END.length)
+  return stripBlocks(html)
 }
 
 function findAsar(input) {
@@ -331,9 +349,9 @@ function main() {
   }
 
   const asar = findAsar(value("--asar"))
-  const backup = `${asar}.swarm-backup`
+  const backup = `${asar}.quorum-backup`
 
-  console.log(`swarm dashboard installer`)
+  console.log(`quorum dashboard installer`)
   console.log(`  archive: ${asar}`)
 
   if (flag("--fuse")) {
@@ -358,7 +376,7 @@ function main() {
     return
   }
 
-  const panelSource = path.join(here, "swarm-panel.js")
+  const panelSource = path.join(here, "quorum-panel.js")
   if (!fs.existsSync(panelSource)) throw new Error(`missing panel source: ${panelSource}`)
   const panel = fs.readFileSync(panelSource)
 
@@ -406,7 +424,7 @@ function main() {
   }
 
   const output = patchArchive(archive.header, archive.blob, { replaced, added })
-  const temporary = `${asar}.swarm-tmp`
+  const temporary = `${asar}.quorum-tmp`
   try {
     fs.writeFileSync(temporary, output)
     fs.renameSync(temporary, asar)
@@ -435,7 +453,7 @@ function main() {
     .subarray(Number(checkHtml.node.offset), Number(checkHtml.node.offset) + Number(checkHtml.node.size))
     .toString("utf8")
   if (!htmlBack.includes(MARKER_START)) throw new Error("verification failed: marker missing from index.html")
-  if (!check.blob.subarray(Number(checkPanel.node.offset), Number(checkPanel.node.offset) + Number(checkPanel.node.size)).includes(Buffer.from("Swarm dashboard"))) {
+  if (!check.blob.subarray(Number(checkPanel.node.offset), Number(checkPanel.node.offset) + Number(checkPanel.node.size)).includes(Buffer.from("Quorum dashboard"))) {
     throw new Error("verification failed: panel content looks wrong")
   }
 
@@ -454,13 +472,18 @@ function main() {
   console.log(`\ninstalled (${output.length} bytes).`)
   console.log("Every pre-existing file kept its original offset, size and bytes; the panel and the")
   console.log("patched index.html were appended at the end.")
-  console.log("Restart OpenCode: Swarm appears in the title bar (beside Home / New session)")
+  console.log("Restart OpenCode: Quorum appears in the title bar (beside Home / New session)")
   console.log("and in the sidebar above Settings.")
   console.log(`If OpenCode does not start, restore the untouched archive with:`)
   console.log(`  node "${path.join(here, "install.mjs")}" --uninstall`)
 }
 
-export { readAsar, serialize, patchArchive, leaves, fileNode, patchHtml, unpatchHtml, findAsar, fuseReport, NET_CAPTURE }
+/** True when the HTML already carries a dashboard block, current or legacy. */
+function isPatchedHtml(html) {
+  return MARKERS.some((marker) => html.includes(marker.start))
+}
+
+export { readAsar, serialize, patchArchive, leaves, fileNode, patchHtml, unpatchHtml, isPatchedHtml, findAsar, fuseReport, NET_CAPTURE }
 
 function isMain() {
   const entry = process.argv[1]

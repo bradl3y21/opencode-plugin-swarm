@@ -1,5 +1,5 @@
 /**
- * Swarm dashboard — the panel injected into the OpenCode desktop window.
+ * Quorum dashboard — the panel injected into the OpenCode desktop window.
  *
  * This file is loaded as a module by `out/renderer/index.html` after a minimal
  * patch. It is deliberately dependency-free: it runs in the app's renderer
@@ -15,9 +15,9 @@
  * already uses. That is version-proof and needs no configuration.
  */
 
-;(function installSwarmPanel() {
-  if (window.__swarmPanel) return
-  window.__swarmPanel = { version: "1.0.0" }
+;(function installQuorumPanel() {
+  if (window.__quorumPanel) return
+  window.__quorumPanel = { version: "1.1.0" }
 
   // -------------------------------------------------------------------------
   // Discover the server by observing the app's own requests
@@ -29,7 +29,7 @@
 
   function installCapture() {
     const net = { origin: null, headers: {}, listeners: [], ready: false, remember: undefined }
-    window.__swarmNet = net
+    window.__quorumNet = net
 
     const notify = () => {
       net.ready = Boolean(net.origin)
@@ -87,13 +87,13 @@
       const open = XMLHttpRequest.prototype.open
       const setHeader = XMLHttpRequest.prototype.setRequestHeader
       XMLHttpRequest.prototype.open = function (method, url) {
-        this.__swarmUrl = url
+        this.__quorumUrl = url
         return open.apply(this, arguments)
       }
       XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
         try {
-          if (this.__swarmUrl && looksLikeApi(String(this.__swarmUrl))) {
-            net.remember(String(this.__swarmUrl), { [name]: value })
+          if (this.__quorumUrl && looksLikeApi(String(this.__quorumUrl))) {
+            net.remember(String(this.__quorumUrl), { [name]: value })
           }
         } catch {
           /* ignore */
@@ -107,7 +107,7 @@
     return net
   }
 
-  const net = window.__swarmNet || installCapture()
+  const net = window.__quorumNet || installCapture()
   if (!Array.isArray(net.listeners)) net.listeners = []
   const restFetch = window.fetch ? window.fetch.bind(window) : undefined
 
@@ -125,7 +125,7 @@
   /** One line of diagnostics; console.warn is captured in OpenCode's renderer log. */
   function note(message) {
     try {
-      console.warn(`[swarm] ${message}`)
+      console.warn(`[quorum] ${message}`)
     } catch {
       /* ignore */
     }
@@ -222,10 +222,10 @@
     }
   }
 
-  /** True when the swarm RPC answers for this location. */
-  async function servesSwarm(value) {
+  /** True when the quorum RPC answers for this location. */
+  async function servesQuorum(value) {
     try {
-      const response = await restFetch(`${net.origin}/api/rpc/swarm/state`, {
+      const response = await restFetch(`${net.origin}/api/rpc/quorum/state`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-opencode-directory": value },
         body: JSON.stringify({ location: { directory: value }, input: { json: "{}" } }),
@@ -238,7 +238,7 @@
   }
 
   /**
-   * Finds the location the swarm RPC answers for.
+   * Finds the location the quorum RPC answers for.
    *
    * The registry is per project, so a location where the plugin is not loaded
    * answers `rpc.unavailable`. The header the app sends is usually right, but
@@ -259,14 +259,14 @@
       if (!candidates.includes(candidate)) candidates.push(candidate)
     }
     for (const candidate of candidates.slice(0, 8)) {
-      if (await servesSwarm(candidate)) {
+      if (await servesQuorum(candidate)) {
         directory = candidate
         note(`location: ${candidate}`)
         return directory
       }
     }
     // Nothing answered: keep the best guess so the caller surfaces the real error.
-    note(`no location answered for swarm (tried ${candidates.length})`)
+    note(`no location answered for quorum (tried ${candidates.length})`)
     directory = candidates[0] ?? null
     return directory
   }
@@ -287,7 +287,7 @@
   async function rpc(method, body = {}) {
     if (!net.origin) await ensureOrigin()
     if (!net.origin) throw new Error("Looking for the OpenCode server… open or refresh a session and this will connect.")
-    const url = `${net.origin}/api/rpc/swarm/${method}`
+    const url = `${net.origin}/api/rpc/quorum/${method}`
     const payload = JSON.stringify({ input: { json: JSON.stringify(body) } })
     await resolveDirectory()
 
@@ -344,9 +344,9 @@
   // -------------------------------------------------------------------------
 
   const CSS = `
-  .sw-root { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; }
-  .sw-root * { box-sizing: border-box; }
-  .sw-launch {
+  .q-root { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; }
+  .q-root * { box-sizing: border-box; }
+  .q-launch {
     position: absolute; right: 18px; bottom: 18px; pointer-events: auto;
     display: flex; align-items: center; gap: 8px;
     padding: 9px 14px 9px 11px; border-radius: 999px; cursor: pointer;
@@ -358,17 +358,17 @@
     font-size: 12px; font-weight: 600; letter-spacing: .01em; user-select: none;
     transition: transform .12s ease, background .12s ease;
   }
-  .sw-launch:hover { transform: translateY(-1px); background: var(--surface-raised-strong-hover, #262626); }
-  .sw-launch .sw-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--icon-weak-base, #666); }
-  .sw-launch[data-active="true"] .sw-dot { background: var(--icon-success-base, #46a758); }
-  .sw-launch[data-busy="true"] .sw-dot { background: var(--icon-warning-base, #f5a623); animation: sw-pulse 1s ease-in-out infinite; }
-  @keyframes sw-pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  .q-launch:hover { transform: translateY(-1px); background: var(--surface-raised-strong-hover, #262626); }
+  .q-launch .q-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--icon-weak-base, #666); }
+  .q-launch[data-active="true"] .q-dot { background: var(--icon-success-base, #46a758); }
+  .q-launch[data-busy="true"] .q-dot { background: var(--icon-warning-base, #f5a623); animation: q-pulse 1s ease-in-out infinite; }
+  @keyframes q-pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
 
-  .sw-panel {
+  .q-panel {
     /* Never cover the window's own title bar: the traffic-light / close buttons
        live there and are drawn above the page, so a control placed under them
-       would silently close the app instead. --sw-top is measured at runtime. */
-    position: absolute; top: var(--sw-top, 40px); right: 0; bottom: 0; width: min(460px, 94vw);
+       would silently close the app instead. --q-top is measured at runtime. */
+    position: absolute; top: var(--q-top, 40px); right: 0; bottom: 0; width: min(460px, 94vw);
     pointer-events: auto; display: flex; flex-direction: column;
     background: var(--background-base, #101010);
     color: var(--text-base, #fafafa);
@@ -377,117 +377,117 @@
     font-family: var(--font-family-sans, system-ui, sans-serif);
     font-size: 12px; transform: translateX(102%); transition: transform .18s ease;
   }
-  .sw-panel[data-open="true"] { transform: none; }
-  .sw-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border-weak-base, #222); }
-  .sw-title { font-size: 13px; font-weight: 600; }
-  .sw-sub { color: var(--text-weak-base, #8a8a8a); font-size: 11px; }
-  .sw-grow { flex: 1; }
-  .sw-iconbtn {
+  .q-panel[data-open="true"] { transform: none; }
+  .q-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border-weak-base, #222); }
+  .q-title { font-size: 13px; font-weight: 600; }
+  .q-sub { color: var(--text-weak-base, #8a8a8a); font-size: 11px; }
+  .q-grow { flex: 1; }
+  .q-iconbtn {
     background: transparent; border: 1px solid transparent; color: var(--icon-weak-base, #999);
     border-radius: var(--radius-md, 6px); cursor: pointer; font-size: 12px; line-height: 1;
     padding: 5px 7px; font-family: inherit;
   }
-  .sw-iconbtn:hover { background: var(--surface-base-hover, #1e1e1e); color: var(--text-base, #fafafa); }
-  .sw-body { flex: 1; overflow-y: auto; padding: 12px 14px 20px; }
-  .sw-foot { padding: 8px 14px; border-top: 1px solid var(--border-weak-base, #222); color: var(--text-weak-base, #8a8a8a); font-size: 10px; display: flex; gap: 8px; align-items: center; }
+  .q-iconbtn:hover { background: var(--surface-base-hover, #1e1e1e); color: var(--text-base, #fafafa); }
+  .q-body { flex: 1; overflow-y: auto; padding: 12px 14px 20px; }
+  .q-foot { padding: 8px 14px; border-top: 1px solid var(--border-weak-base, #222); color: var(--text-weak-base, #8a8a8a); font-size: 10px; display: flex; gap: 8px; align-items: center; }
 
-  .sw-section { margin-bottom: 16px; }
-  .sw-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-weak-base, #8a8a8a); margin-bottom: 6px; font-weight: 600; }
-  .sw-row { display: flex; gap: 8px; align-items: center; }
-  .sw-row + .sw-row { margin-top: 8px; }
+  .q-section { margin-bottom: 16px; }
+  .q-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-weak-base, #8a8a8a); margin-bottom: 6px; font-weight: 600; }
+  .q-row { display: flex; gap: 8px; align-items: center; }
+  .q-row + .q-row { margin-top: 8px; }
 
-  select.sw-input, input.sw-input, textarea.sw-input {
+  select.q-input, input.q-input, textarea.q-input {
     width: 100%; background: var(--input-base, #171717); color: var(--text-base, #fafafa);
     border: 1px solid var(--border-base, #2f2f2f); border-radius: var(--radius-md, 6px);
     padding: 7px 9px; font-family: inherit; font-size: 12px; outline: none;
   }
-  select.sw-input:focus, input.sw-input:focus, textarea.sw-input:focus { border-color: var(--border-focus, #4b8bf5); }
-  textarea.sw-input { resize: vertical; min-height: 68px; line-height: 1.45; }
+  select.q-input:focus, input.q-input:focus, textarea.q-input:focus { border-color: var(--border-focus, #4b8bf5); }
+  textarea.q-input { resize: vertical; min-height: 68px; line-height: 1.45; }
 
-  .sw-btn {
+  .q-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 7px 12px; border-radius: var(--radius-md, 6px); cursor: pointer;
     background: var(--surface-interactive-base, #2b6cf6); color: var(--text-base, #fff);
     border: 1px solid transparent; font-family: inherit; font-size: 12px; font-weight: 600;
   }
-  .sw-btn:hover { background: var(--surface-interactive-hover, #3b7bf6); }
-  .sw-btn:disabled { opacity: .5; cursor: default; }
-  .sw-btn.sw-ghost { background: transparent; border-color: var(--border-base, #333); color: var(--text-base, #fafafa); font-weight: 500; }
-  .sw-btn.sw-ghost:hover { background: var(--surface-base-hover, #1e1e1e); }
-  .sw-btn.sw-danger { background: var(--surface-critical-base, #b4323a); }
+  .q-btn:hover { background: var(--surface-interactive-hover, #3b7bf6); }
+  .q-btn:disabled { opacity: .5; cursor: default; }
+  .q-btn.q-ghost { background: transparent; border-color: var(--border-base, #333); color: var(--text-base, #fafafa); font-weight: 500; }
+  .q-btn.q-ghost:hover { background: var(--surface-base-hover, #1e1e1e); }
+  .q-btn.q-danger { background: var(--surface-critical-base, #b4323a); }
 
-  .sw-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
-  .sw-chip {
+  .q-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+  .q-chip {
     display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: 999px;
     background: var(--surface-inset-base, #1b1b1b); border: 1px solid var(--border-weak-base, #2a2a2a);
     font-size: 11px; color: var(--text-base, #fafafa);
   }
-  .sw-chip button { background: none; border: none; color: var(--icon-weak-base, #999); cursor: pointer; padding: 0; font-size: 11px; line-height: 1; }
-  .sw-chip button:hover { color: var(--icon-critical-base, #f66); }
-  .sw-modelist { max-height: 156px; overflow-y: auto; border: 1px solid var(--border-weak-base, #262626); border-radius: var(--radius-md, 6px); margin-top: 6px; }
-  .sw-model {
+  .q-chip button { background: none; border: none; color: var(--icon-weak-base, #999); cursor: pointer; padding: 0; font-size: 11px; line-height: 1; }
+  .q-chip button:hover { color: var(--icon-critical-base, #f66); }
+  .q-modelist { max-height: 156px; overflow-y: auto; border: 1px solid var(--border-weak-base, #262626); border-radius: var(--radius-md, 6px); margin-top: 6px; }
+  .q-model {
     display: flex; align-items: center; gap: 8px; padding: 5px 8px; cursor: pointer; font-size: 11px;
   }
-  .sw-model:hover { background: var(--surface-base-hover, #1c1c1c); }
-  .sw-model[data-on="true"] { background: var(--surface-interactive-weak, #182a4d); }
-  .sw-model .sw-mname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sw-model .sw-mprov { color: var(--text-weak-base, #888); font-size: 10px; }
-  .sw-empty { color: var(--text-weak-base, #8a8a8a); padding: 8px; font-size: 11px; }
+  .q-model:hover { background: var(--surface-base-hover, #1c1c1c); }
+  .q-model[data-on="true"] { background: var(--surface-interactive-weak, #182a4d); }
+  .q-model .q-mname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .q-model .q-mprov { color: var(--text-weak-base, #888); font-size: 10px; }
+  .q-empty { color: var(--text-weak-base, #8a8a8a); padding: 8px; font-size: 11px; }
 
-  .sw-steps { display: flex; flex-direction: column; gap: 5px; }
-  .sw-step {
+  .q-steps { display: flex; flex-direction: column; gap: 5px; }
+  .q-step {
     border: 1px solid var(--border-weak-base, #262626); border-radius: var(--radius-md, 6px);
     background: var(--surface-inset-base, #161616); overflow: hidden;
   }
-  .sw-stephead { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; }
-  .sw-stephead:hover { background: var(--surface-base-hover, #1c1c1c); }
-  .sw-badge { width: 16px; text-align: center; font-size: 11px; }
-  .sw-step[data-status="running"] .sw-badge { color: var(--icon-warning-base, #f5a623); }
-  .sw-step[data-status="done"] .sw-badge { color: var(--icon-success-base, #46a758); }
-  .sw-step[data-status="failed"] .sw-badge { color: var(--icon-critical-base, #ef5350); }
-  .sw-step[data-status="pending"] .sw-badge { color: var(--icon-weak-base, #777); }
-  .sw-steplabel { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sw-stepmeta { color: var(--text-weak-base, #888); font-size: 10px; font-variant-numeric: tabular-nums; }
-  .sw-stepbody { padding: 8px; border-top: 1px solid var(--border-weak-base, #242424); }
-  .sw-pre {
+  .q-stephead { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; }
+  .q-stephead:hover { background: var(--surface-base-hover, #1c1c1c); }
+  .q-badge { width: 16px; text-align: center; font-size: 11px; }
+  .q-step[data-status="running"] .q-badge { color: var(--icon-warning-base, #f5a623); }
+  .q-step[data-status="done"] .q-badge { color: var(--icon-success-base, #46a758); }
+  .q-step[data-status="failed"] .q-badge { color: var(--icon-critical-base, #ef5350); }
+  .q-step[data-status="pending"] .q-badge { color: var(--icon-weak-base, #777); }
+  .q-steplabel { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .q-stepmeta { color: var(--text-weak-base, #888); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .q-stepbody { padding: 8px; border-top: 1px solid var(--border-weak-base, #242424); }
+  .q-pre {
     white-space: pre-wrap; word-break: break-word; margin: 0;
     font-family: var(--font-family-mono, ui-monospace, monospace); font-size: 11px; line-height: 1.5;
     max-height: 260px; overflow: auto; color: var(--text-base, #fafafa);
   }
-  .sw-err { color: var(--text-critical-base, #ef5350); }
+  .q-err { color: var(--text-critical-base, #ef5350); }
 
-  .sw-result {
+  .q-result {
     border: 1px solid var(--border-weaker-base, #2a2a2a); border-radius: var(--radius-lg, 8px);
     background: var(--surface-raised-base, #171717); padding: 10px; margin-top: 6px;
   }
-  .sw-runlist { display: flex; flex-direction: column; gap: 3px; }
-  .sw-run {
+  .q-runlist { display: flex; flex-direction: column; gap: 3px; }
+  .q-run {
     display: flex; gap: 8px; align-items: center; padding: 5px 7px; border-radius: var(--radius-sm, 4px);
     cursor: pointer; font-size: 11px;
   }
-  .sw-run:hover { background: var(--surface-base-hover, #1c1c1c); }
-  .sw-run .sw-rtask { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sw-run .sw-rmeta { color: var(--text-weak-base, #888); font-size: 10px; }
-  .sw-banner { padding: 8px 10px; border-radius: var(--radius-md, 6px); margin-bottom: 10px; font-size: 11px; }
-  .sw-banner[data-kind="warn"] { background: var(--surface-warning-weak, #3a2f10); color: var(--text-warning-base, #f5c04a); }
-  .sw-banner[data-kind="error"] { background: var(--surface-critical-weak, #3a1414); color: var(--text-critical-base, #ef8080); }
-  .sw-banner[data-kind="info"] { background: var(--surface-inset-base, #1b1b1b); color: var(--text-weak-base, #9a9a9a); }
+  .q-run:hover { background: var(--surface-base-hover, #1c1c1c); }
+  .q-run .q-rtask { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .q-run .q-rmeta { color: var(--text-weak-base, #888); font-size: 10px; }
+  .q-banner { padding: 8px 10px; border-radius: var(--radius-md, 6px); margin-bottom: 10px; font-size: 11px; }
+  .q-banner[data-kind="warn"] { background: var(--surface-warning-weak, #3a2f10); color: var(--text-warning-base, #f5c04a); }
+  .q-banner[data-kind="error"] { background: var(--surface-critical-weak, #3a1414); color: var(--text-critical-base, #ef8080); }
+  .q-banner[data-kind="info"] { background: var(--surface-inset-base, #1b1b1b); color: var(--text-weak-base, #9a9a9a); }
 
   /* OpenCode styles its own [data-selected] rows; the title-bar button has no
      such variant, so mirror the same treatment for our openers. */
-  [data-swarm-opener][data-selected="true"] {
+  [data-quorum-opener][data-selected="true"] {
     background: var(--v2-background-bg-layer-01, var(--surface-base-hover, rgba(255, 255, 255, .08)));
     color: var(--v2-text-text-base, var(--text-base, #fff));
   }
-  [data-swarm-opener][data-selected="true"] [data-slot="icon-svg"] {
+  [data-quorum-opener][data-selected="true"] [data-slot="icon-svg"] {
     color: var(--v2-icon-icon-base, currentColor);
   }
   `
 
   function injectStyles() {
-    if (document.getElementById("swarm-panel-styles")) return
+    if (document.getElementById("quorum-panel-styles")) return
     const style = document.createElement("style")
-    style.id = "swarm-panel-styles"
+    style.id = "quorum-panel-styles"
     style.textContent = CSS
     document.head.appendChild(style)
   }
@@ -570,8 +570,8 @@
   }
 
   // A small read-only view of the panel's state, handy when something looks
-  // wrong: `window.__swarmPanel.state()` in devtools.
-  window.__swarmPanel.state = () => ({
+  // wrong: `window.__quorumPanel.state()` in devtools.
+  window.__quorumPanel.state = () => ({
     open: state.open,
     loading: state.loading,
     error: state.error,
@@ -665,7 +665,7 @@
     const body = { task, strategy: currentStrategy(), workerMode: currentMode() }
     const members = currentMembers()
     if (members.length) body.members = members
-    setState({ loading: true, banner: { kind: "info", text: "Starting the swarm…" } })
+    setState({ loading: true, banner: { kind: "info", text: "Starting the quorum…" } })
     try {
       const result = await rpc("run", body)
       if (result && result.ok === false) throw new Error(result.error || "could not start")
@@ -709,33 +709,33 @@
 
   function renderBanner() {
     if (state.error) {
-      return el("div", { class: "sw-banner", "data-kind": "error", text: `Server: ${state.error}` })
+      return el("div", { class: "q-banner", "data-kind": "error", text: `Server: ${state.error}` })
     }
     if (!net.origin) {
       return el("div", {
-        class: "sw-banner",
+        class: "q-banner",
         "data-kind": "info",
         text: "Looking for the OpenCode server… open or refresh a session and this will connect.",
       })
     }
     if (state.banner) {
-      return el("div", { class: "sw-banner", "data-kind": state.banner.kind, text: state.banner.text })
+      return el("div", { class: "q-banner", "data-kind": state.banner.kind, text: state.banner.text })
     }
     return null
   }
 
   function renderConfig() {
     const data = state.data
-    if (!data) return el("div", { class: "sw-section" })
+    if (!data) return el("div", { class: "q-section" })
 
     const strategy = el(
       "select",
       {
-        class: "sw-input",
+        class: "q-input",
         onchange: async (event) => {
           // Only a real user interaction may change saved configuration.
           // Synthetic events (from automation or another script in the page)
-          // must not be able to rewrite swarm.json.
+          // must not be able to rewrite quorum.json.
           if (!event.isTrusted) return
           const value = event.target.value
           setState({ strategy: value })
@@ -752,7 +752,7 @@
     const mode = el(
       "select",
       {
-        class: "sw-input",
+        class: "q-input",
         onchange: async (event) => {
           if (!event.isTrusted) return
           const value = event.target.value
@@ -769,18 +769,18 @@
 
     // --- members ---
     const members = currentMembers()
-    const chips = el("div", { class: "sw-chips" })
+    const chips = el("div", { class: "q-chips" })
     if (members.length === 0) {
       chips.appendChild(
         el("span", {
-          class: "sw-chip",
+          class: "q-chip",
           text: `auto (${data.config?.autoMembers ?? 4} diverse models)`,
         }),
       )
     } else {
       for (const member of members) {
         chips.appendChild(
-          el("span", { class: "sw-chip" }, [
+          el("span", { class: "q-chip" }, [
             el("span", { text: member }),
             el("button", {
               title: "Remove",
@@ -797,8 +797,8 @@
     }
 
     const search = el("input", {
-      class: "sw-input",
-      id: "sw-filter",
+      class: "q-input",
+      id: "q-filter",
       placeholder: "Filter models…",
       value: state.modelFilter,
       onfocus: () => {
@@ -816,20 +816,20 @@
 
     const filter = state.modelFilter.toLowerCase()
     const chosen = new Set(currentMembers())
-    const list = el("div", { class: "sw-modelist" })
+    const list = el("div", { class: "q-modelist" })
     const models = (data.models || []).filter(
       (model) => !filter || model.key.toLowerCase().includes(filter) || model.label.toLowerCase().includes(filter),
     )
-    if (models.length === 0) list.appendChild(el("div", { class: "sw-empty", text: "No models match." }))
+    if (models.length === 0) list.appendChild(el("div", { class: "q-empty", text: "No models match." }))
     for (const model of models) {
       const on = chosen.has(model.key)
       list.appendChild(
         el(
           "div",
           {
-            class: "sw-model",
+            class: "q-model",
             "data-on": String(on),
-            title: on ? "Click to remove from the swarm" : "Click to add to the swarm",
+            title: on ? "Click to remove from the quorum" : "Click to add to the quorum",
             onclick: async (event) => {
               if (event && !event.isTrusted) return
               const next = new Set(chosen)
@@ -841,21 +841,21 @@
             },
           },
           [
-            el("span", { class: "sw-badge", text: on ? "✓" : "·" }),
-            el("span", { class: "sw-mname", text: model.label }),
-            el("span", { class: "sw-mprov", text: model.provider.split("/")[0] }),
+            el("span", { class: "q-badge", text: on ? "✓" : "·" }),
+            el("span", { class: "q-mname", text: model.label }),
+            el("span", { class: "q-mprov", text: model.provider.split("/")[0] }),
           ],
         ),
       )
     }
 
     const copiesInput = el("input", {
-      class: "sw-input",
+      class: "q-input",
       type: "number",
       min: "1",
       max: "8",
       step: "1",
-      title: "Run each member this many times. Above 1 this is a swarm of the same model.",
+      title: "Run each member this many times. Above 1 this is a quorum of the same model.",
       value: String(currentCopies()),
       onchange: async (event) => {
         if (!event.isTrusted) return
@@ -865,22 +865,22 @@
       },
     })
 
-    return el("div", { class: "sw-section" }, [
-      el("label", { class: "sw-label", text: "Strategy" }),
+    return el("div", { class: "q-section" }, [
+      el("label", { class: "q-label", text: "Strategy" }),
       strategy,
-      el("div", { class: "sw-sub", text: STRATEGY_HELP[currentStrategy()] || "", style: "margin-top:5px" }),
-      el("div", { class: "sw-row", style: "margin-top:12px" }, [
-        el("div", { class: "sw-grow" }, [el("label", { class: "sw-label", text: "Workers" }), mode]),
-        el("div", { style: "width:86px" }, [el("label", { class: "sw-label", text: "Copies" }), copiesInput]),
+      el("div", { class: "q-sub", text: STRATEGY_HELP[currentStrategy()] || "", style: "margin-top:5px" }),
+      el("div", { class: "q-row", style: "margin-top:12px" }, [
+        el("div", { class: "q-grow" }, [el("label", { class: "q-label", text: "Workers" }), mode]),
+        el("div", { style: "width:86px" }, [el("label", { class: "q-label", text: "Copies" }), copiesInput]),
       ]),
       currentCopies() > 1
         ? el("div", {
-            class: "sw-sub",
-            text: `each member runs ${currentCopies()}× with a different framing — a swarm of the same model`,
+            class: "q-sub",
+            text: `each member runs ${currentCopies()}× with a different framing — a quorum of the same model`,
             style: "margin-top:5px",
           })
         : null,
-      el("label", { class: "sw-label", text: "Members", style: "margin-top:12px" }),
+      el("label", { class: "q-label", text: "Members", style: "margin-top:12px" }),
       chips,
       search,
       list,
@@ -889,8 +889,8 @@
 
   function renderTask() {
     const textarea = el("textarea", {
-      class: "sw-input",
-      placeholder: "What should the swarm work on?",
+      class: "q-input",
+      placeholder: "What should the quorum work on?",
       oninput: (event) => {
         state.task = event.target.value
         dom.run.disabled = !state.task.trim()
@@ -899,17 +899,17 @@
     textarea.value = state.task
 
     const run = el("button", {
-      class: "sw-btn",
-      text: "Run swarm",
+      class: "q-btn",
+      text: "Run quorum",
       onclick: () => void startRun(),
     })
     run.disabled = !state.task.trim()
     dom.run = run
 
-    return el("div", { class: "sw-section" }, [
-      el("label", { class: "sw-label", text: "Task" }),
+    return el("div", { class: "q-section" }, [
+      el("label", { class: "q-label", text: "Task" }),
       textarea,
-      el("div", { class: "sw-row", style: "margin-top:8px" }, [run]),
+      el("div", { class: "q-row", style: "margin-top:8px" }, [run]),
     ])
   }
 
@@ -917,29 +917,29 @@
     const runs = state.data?.runs ?? []
     const active = runs.filter((run) => run.status === "running")
     if (runs.length === 0) {
-      return el("div", { class: "sw-section" }, [
-        el("label", { class: "sw-label", text: "Runs" }),
-        el("div", { class: "sw-sub", text: "No runs yet." }),
+      return el("div", { class: "q-section" }, [
+        el("label", { class: "q-label", text: "Runs" }),
+        el("div", { class: "q-sub", text: "No runs yet." }),
       ])
     }
-    const list = el("div", { class: "sw-runlist" })
+    const list = el("div", { class: "q-runlist" })
     for (const run of runs.slice(0, 8)) {
       list.appendChild(
-        el("div", { class: "sw-run", onclick: () => setState({ expanded: new Set(run.steps.map((s) => s.id)) }) }, [
-          el("span", { class: "sw-badge", text: statusBadge(run.status) }),
-          el("span", { class: "sw-rtask", text: run.task.slice(0, 70) }),
-          el("span", { class: "sw-rmeta", text: `${run.strategy} · ${fmtMs(run.ms)}` }),
+        el("div", { class: "q-run", onclick: () => setState({ expanded: new Set(run.steps.map((s) => s.id)) }) }, [
+          el("span", { class: "q-badge", text: statusBadge(run.status) }),
+          el("span", { class: "q-rtask", text: run.task.slice(0, 70) }),
+          el("span", { class: "q-rmeta", text: `${run.strategy} · ${fmtMs(run.ms)}` }),
         ]),
       )
     }
-    return el("div", { class: "sw-section" }, [
-      el("div", { class: "sw-row" }, [
-        el("label", { class: "sw-label sw-grow", text: "Runs", style: "margin:0" }),
+    return el("div", { class: "q-section" }, [
+      el("div", { class: "q-row" }, [
+        el("label", { class: "q-label q-grow", text: "Runs", style: "margin:0" }),
         ...active.map((run) =>
           el("button", {
-            class: "sw-btn sw-danger",
+            class: "q-btn q-danger",
             style: "padding:3px 8px;font-size:11px",
-            text: `Cancel ${run.id.replace("swarm_", "")}`,
+            text: `Cancel ${run.id.replace("quorum_", "")}`,
             onclick: () => void cancelRun(run.id),
           }),
         ),
@@ -953,20 +953,20 @@
     const run = runs.find((entry) => entry.status === "running") || runs[0]
     if (!run) return null
 
-    const steps = el("div", { class: "sw-steps" })
+    const steps = el("div", { class: "q-steps" })
     for (const step of run.steps) {
       const expanded = state.expanded.has(step.id)
       const body = expanded
-        ? el("div", { class: "sw-stepbody" }, [
+        ? el("div", { class: "q-stepbody" }, [
             step.error
-              ? el("pre", { class: "sw-pre sw-err", text: step.error })
-              : el("pre", { class: "sw-pre", text: step.output || "(no output)" }),
+              ? el("pre", { class: "q-pre q-err", text: step.error })
+              : el("pre", { class: "q-pre", text: step.output || "(no output)" }),
           ])
         : null
       steps.appendChild(
-        el("div", { class: "sw-step", "data-status": step.status, "data-step": step.id }, [
+        el("div", { class: "q-step", "data-status": step.status, "data-step": step.id }, [
           el("div", {
-            class: "sw-stephead",
+            class: "q-stephead",
             onclick: () => {
               const next = new Set(state.expanded)
               if (expanded) next.delete(step.id)
@@ -974,9 +974,9 @@
               setState({ expanded: next })
             },
           }, [
-            el("span", { class: "sw-badge", text: statusBadge(step.status) }),
-            el("span", { class: "sw-steplabel", text: `${step.kind} · ${step.label}` }),
-            el("span", { class: "sw-stepmeta", text: step.error ? "failed" : fmtMs(step.ms) }),
+            el("span", { class: "q-badge", text: statusBadge(step.status) }),
+            el("span", { class: "q-steplabel", text: `${step.kind} · ${step.label}` }),
+            el("span", { class: "q-stepmeta", text: step.error ? "failed" : fmtMs(step.ms) }),
           ]),
           body,
         ]),
@@ -984,34 +984,34 @@
     }
 
     const result = run.result
-      ? el("div", { class: "sw-result" }, [
-          el("div", { class: "sw-row" }, [
-            el("label", { class: "sw-label sw-grow", text: "Result", style: "margin:0" }),
+      ? el("div", { class: "q-result" }, [
+          el("div", { class: "q-row" }, [
+            el("label", { class: "q-label q-grow", text: "Result", style: "margin:0" }),
             el("button", {
-              class: "sw-iconbtn",
+              class: "q-iconbtn",
               text: "copy",
               onclick: () => {
                 void navigator.clipboard?.writeText(run.result)
-                setState({ banner: { kind: "info", text: "Copied the swarm result." } })
+                setState({ banner: { kind: "info", text: "Copied the quorum result." } })
               },
             }),
           ]),
-          el("pre", { class: "sw-pre", text: run.result }),
+          el("pre", { class: "q-pre", text: run.result }),
         ])
       : run.error
-        ? el("div", { class: "sw-banner", "data-kind": "error", text: run.error })
+        ? el("div", { class: "q-banner", "data-kind": "error", text: run.error })
         : null
 
     const warnings = run.warnings?.length
-      ? el("div", { class: "sw-sub", text: run.warnings.join(" · "), style: "margin-top:6px" })
+      ? el("div", { class: "q-sub", text: run.warnings.join(" · "), style: "margin-top:6px" })
       : null
 
-    return el("div", { class: "sw-section" }, [
+    return el("div", { class: "q-section" }, [
       el("label", {
-        class: "sw-label",
+        class: "q-label",
         text: `Current run — ${run.status}${run.ms ? ` in ${fmtMs(run.ms)}` : ""}`,
       }),
-      el("div", { class: "sw-sub", text: `${run.id} · ${run.strategy} · ${run.workerMode} workers`, style: "margin-bottom:7px" }),
+      el("div", { class: "q-sub", text: `${run.id} · ${run.strategy} · ${run.workerMode} workers`, style: "margin-bottom:7px" }),
       steps,
       result,
       warnings,
@@ -1042,12 +1042,12 @@
     // expanded step's output, and the model list.
     const bodyScroll = dom.body.scrollTop
     const stepScrolls = new Map()
-    for (const element of dom.body.querySelectorAll(".sw-step[data-step]")) {
-      const pre = element.querySelector(".sw-pre")
+    for (const element of dom.body.querySelectorAll(".q-step[data-step]")) {
+      const pre = element.querySelector(".q-pre")
       const id = element.getAttribute("data-step")
       if (pre && id) stepScrolls.set(id, pre.scrollTop)
     }
-    const previousList = dom.body.querySelector(".sw-modelist")
+    const previousList = dom.body.querySelector(".q-modelist")
     const previousScroll = previousList ? previousList.scrollTop : 0
 
     dom.body.replaceChildren(
@@ -1062,15 +1062,15 @@
 
     dom.body.scrollTop = bodyScroll
     for (const [id, top] of stepScrolls) {
-      const pre = dom.body.querySelector(`.sw-step[data-step="${id}"] .sw-pre`)
+      const pre = dom.body.querySelector(`.q-step[data-step="${id}"] .q-pre`)
       if (pre && top) pre.scrollTop = top
     }
-    const modelList = dom.body.querySelector(".sw-modelist")
+    const modelList = dom.body.querySelector(".q-modelist")
     if (modelList && previousScroll) modelList.scrollTop = previousScroll
 
     // Keep the caret in the model filter across the re-render it triggers.
     if (state.filterFocused) {
-      const filter = dom.body.querySelector("#sw-filter")
+      const filter = dom.body.querySelector("#q-filter")
       if (filter) {
         filter.focus()
         const end = filter.value.length
@@ -1085,8 +1085,8 @@
     const config = state.data?.config
     dom.foot.replaceChildren(
       el("span", { text: config ? `${currentMembers().length || config.autoMembers} members · concurrency ${config.concurrency}` : "" }),
-      el("span", { class: "sw-grow" }),
-      el("span", { text: "swarm.json" }),
+      el("span", { class: "q-grow" }),
+      el("span", { text: "quorum.json" }),
     )
   }
 
@@ -1129,7 +1129,7 @@
 
   function applyChromeInset() {
     const inset = Math.max(40, Math.min(120, chromeInset()))
-    document.documentElement.style.setProperty("--sw-top", `${inset}px`)
+    document.documentElement.style.setProperty("--q-top", `${inset}px`)
   }
 
   /**
@@ -1141,7 +1141,7 @@
    * my own CSS. The floating button is kept only as a fallback for a layout
    * where neither anchor exists, so the feature can never become unreachable.
    */
-  const SWARM_ICON = "models"
+  const QUORUM_ICON = "models"
 
   function iconMarkup(name) {
     return `<svg data-slot="icon-svg" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><use href="#opencode-v2-icon-${name}"></use></svg>`
@@ -1152,12 +1152,12 @@
   }
 
   function wireOpener(button, where) {
-    button.setAttribute("data-swarm-opener", where)
+    button.setAttribute("data-quorum-opener", where)
     button.removeAttribute("data-action")
-    button.setAttribute("aria-label", "Swarm")
-    button.setAttribute("title", "Swarm — run several models on one task")
+    button.setAttribute("aria-label", "Quorum")
+    button.setAttribute("title", "Quorum — run several models on one task")
     const svg = button.querySelector("svg")
-    if (svg && svg.parentElement) svg.outerHTML = iconMarkup(SWARM_ICON)
+    if (svg && svg.parentElement) svg.outerHTML = iconMarkup(QUORUM_ICON)
     button.addEventListener("click", (event) => {
       event.preventDefault()
       event.stopPropagation()
@@ -1172,7 +1172,7 @@
 
     // 1. Title bar: a global action, next to Home and New session, in every view.
     const titlebar = document.querySelector("[data-slot=titlebar-v2]")
-    const existingTitlebar = titlebar?.querySelector("[data-swarm-opener=titlebar]")
+    const existingTitlebar = titlebar?.querySelector("[data-quorum-opener=titlebar]")
     if (existingTitlebar) {
       openers.push(existingTitlebar)
     } else if (titlebar) {
@@ -1192,14 +1192,14 @@
     const settings = Array.from(document.querySelectorAll("aside button")).find(
       (button) => (button.textContent || "").trim() === "Settings",
     )
-    const existingSidebar = settings?.parentElement?.querySelector("[data-swarm-opener=sidebar]")
+    const existingSidebar = settings?.parentElement?.querySelector("[data-quorum-opener=sidebar]")
     if (existingSidebar) {
       openers.push(existingSidebar)
     } else if (settings?.parentElement) {
       const entry = settings.cloneNode(true)
       wireOpener(entry, "sidebar")
       const label = entry.querySelector("span")
-      if (label) label.textContent = "Swarm"
+      if (label) label.textContent = "Quorum"
       settings.parentElement.insertBefore(entry, settings)
       openers.push(entry)
     }
@@ -1228,25 +1228,25 @@
       resizeTimer = setTimeout(applyChromeInset, 150)
     })
 
-    const launch = el("div", { class: "sw-launch", title: "Open the swarm dashboard", onclick: toggle }, [
-      el("span", { class: "sw-dot" }),
-      el("span", { text: "Swarm" }),
+    const launch = el("div", { class: "q-launch", title: "Open the quorum dashboard", onclick: toggle }, [
+      el("span", { class: "q-dot" }),
+      el("span", { text: "Quorum" }),
     ])
 
     const close = () => setState({ open: false })
-    const head = el("div", { class: "sw-head" }, [
+    const head = el("div", { class: "q-head" }, [
       el("div", {}, [
-        el("div", { class: "sw-title", text: "Swarm" }),
-        el("div", { class: "sw-sub", text: "Several models, one answer" }),
+        el("div", { class: "q-title", text: "Quorum" }),
+        el("div", { class: "q-sub", text: "Several models, one answer" }),
       ]),
-      el("span", { class: "sw-grow" }),
-      el("button", { class: "sw-iconbtn", text: "refresh", onclick: () => void refresh(false) }),
-      el("button", { class: "sw-iconbtn", text: "✕", title: "Close", onclick: close }),
+      el("span", { class: "q-grow" }),
+      el("button", { class: "q-iconbtn", text: "refresh", onclick: () => void refresh(false) }),
+      el("button", { class: "q-iconbtn", text: "✕", title: "Close", onclick: close }),
     ])
-    const body = el("div", { class: "sw-body" })
-    const foot = el("div", { class: "sw-foot" })
-    const panel = el("div", { class: "sw-panel", "data-open": "false" }, [head, body, foot])
-    const root = el("div", { class: "sw-root" }, [launch, panel])
+    const body = el("div", { class: "q-body" })
+    const foot = el("div", { class: "q-foot" })
+    const panel = el("div", { class: "q-panel", "data-open": "false" }, [head, body, foot])
+    const root = el("div", { class: "q-root" }, [launch, panel])
 
     // Dismiss on a click anywhere outside the panel. This listens on the
     // document, not on the overlay: the overlay is `pointer-events: none`, so a

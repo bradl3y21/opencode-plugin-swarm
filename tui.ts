@@ -1,8 +1,8 @@
 import { Plugin } from "@opencode/plugin/tui"
-import { SwarmRpc } from "./rpc"
+import { QuorumRpc } from "./rpc"
 
 /**
- * Terminal UI for the swarm.
+ * Terminal UI for the quorum.
  *
  * This half only loads in the terminal client (OpenCode does not load TUI
  * plugins in the desktop app; the desktop uses the dashboard injected into the
@@ -40,22 +40,22 @@ interface TuiContext {
 }
 
 export default Plugin.define({
-  id: "swarm.tui",
+  id: "quorum.tui",
 
   setup(rawContext) {
     const context = rawContext as unknown as TuiContext
-    const swarm = context.client.rpc(SwarmRpc)
+    const quorum = context.client.rpc(QuorumRpc)
 
     const call = async <T>(method: string, body: unknown = {}): Promise<T | undefined> => {
       try {
-        const fn = swarm[method]
+        const fn = quorum[method]
         if (!fn) throw new Error(`unknown method ${method}`)
         const result = await fn({ json: JSON.stringify(body) })
         const text = typeof result?.json === "string" ? result.json : undefined
         return text ? (JSON.parse(text) as T) : undefined
       } catch (error) {
         context.ui.toast.show({
-          message: `swarm: ${error instanceof Error ? error.message : String(error)}`,
+          message: `quorum: ${error instanceof Error ? error.message : String(error)}`,
           variant: "error",
         })
         return undefined
@@ -67,17 +67,17 @@ export default Plugin.define({
       priority: 20,
       commands: [
         {
-          id: "swarm.dashboard",
-          title: "Swarm dashboard",
-          description: "Run and watch a swarm of models",
+          id: "quorum.dashboard",
+          title: "Quorum dashboard",
+          description: "Run and watch a quorum of models",
           group: "Plugins",
           bind: "f9",
           palette: true,
-          slash: { name: "swarm", aliases: ["swarms"] },
+          slash: { name: "quorum", aliases: ["quorums"] },
           run: () => openDashboard(context, call),
         },
       ],
-      bindings: ["swarm.dashboard"],
+      bindings: ["quorum.dashboard"],
     }))
   },
 })
@@ -96,17 +96,17 @@ async function openDashboard(
 
     const running = state.runs.filter((run) => run.status === "running").length
     const choice = await context.ui.dialog.select<string>({
-      title: `Swarm — ${state.config.strategy}, ${state.config.members.length || `${state.config.autoMembers} auto`} members${
+      title: `Quorum — ${state.config.strategy}, ${state.config.members.length || `${state.config.autoMembers} auto`} members${
         running ? `, ${running} running` : ""
       }`,
       placeholder: "Choose an action",
       options: [
-        { value: "run", title: "Run a task", description: "Send one task to the swarm" },
+        { value: "run", title: "Run a task", description: "Send one task to the quorum" },
         { value: "strategy", title: `Strategy: ${state.config.strategy}`, description: "How the models work together" },
         {
           value: "members",
           title: `Members: ${state.config.members.length || `${state.config.autoMembers} auto`}`,
-          description: "Which models join the swarm",
+          description: "Which models join the quorum",
         },
         {
           value: "mode",
@@ -122,14 +122,14 @@ async function openDashboard(
     switch (choice) {
       case "run": {
         const task = await context.ui.dialog.prompt({
-          title: "Swarm task",
-          description: "What should the swarm work on?",
+          title: "Quorum task",
+          description: "What should the quorum work on?",
           placeholder: "Review the current change for correctness…",
         })
         if (!task?.trim()) break
         const started = await call<{ runID?: string; ok: boolean; error?: string }>("run", { task: task.trim() })
         if (started?.ok) {
-          context.ui.toast.show({ message: `Swarm started: ${started.runID ?? ""}`, variant: "success" })
+          context.ui.toast.show({ message: `Quorum started: ${started.runID ?? ""}`, variant: "success" })
         } else if (started?.error) {
           context.ui.toast.show({ message: started.error, variant: "error" })
         }
@@ -137,7 +137,7 @@ async function openDashboard(
       }
       case "strategy": {
         const strategy = await context.ui.dialog.select<string>({
-          title: "Swarm strategy",
+          title: "Quorum strategy",
           options: [
             { value: "mixture", title: "mixture", description: "Everyone answers; one model merges the result." },
             { value: "debate", title: "debate", description: "Models critique and revise each other over rounds." },
@@ -153,7 +153,7 @@ async function openDashboard(
       }
       case "members": {
         const members = await context.ui.dialog.prompt({
-          title: "Swarm members",
+          title: "Quorum members",
           description: `Comma separated provider/model. Known models:\n${state.models
             .slice(0, 20)
             .map((model) => model.key)

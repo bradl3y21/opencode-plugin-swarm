@@ -1,22 +1,22 @@
 import { Plugin } from "@opencode/plugin"
-import { createConfigStore, redact, STRATEGIES, writeProjectConfig, type SwarmConfig } from "./config"
-import { SwarmEngine, type SwarmRun } from "./engine"
+import { createConfigStore, redact, STRATEGIES, writeProjectConfig, type QuorumConfig } from "./config"
+import { QuorumEngine, type QuorumRun } from "./engine"
 import { createLogger, logFilePath, readLogTail } from "./log"
-import { SwarmRpc } from "./rpc"
+import { QuorumRpc } from "./rpc"
 import { buildConfigPatch, describeConfig } from "./settings"
 
 /**
- * The swarm server plugin.
+ * The quorum server plugin.
  *
  * It owns the run state and exposes four front-ends over the same engine:
  *   - RPC, so the desktop dashboard and the terminal UI can drive it,
- *   - a `swarm` tool, so the agent can delegate to it,
- *   - a `/swarm` command, so you can start a run from any client,
+ *   - a `quorum` tool, so the agent can delegate to it,
+ *   - a `/quorum` command, so you can start a run from any client,
  *   - synthetic messages, so a run is visible in the chat timeline.
  */
 
-const VERSION = "1.0.0"
-const NAMESPACE = "swarm"
+const VERSION = "1.1.0"
+const NAMESPACE = "quorum"
 
 type Unknown = Record<string, unknown>
 
@@ -110,7 +110,7 @@ function asList(value: unknown): string[] | undefined {
 }
 
 /** Compact one-line-per-step view of a run, used in tool output. */
-function describeRun(run: SwarmRun): string {
+function describeRun(run: QuorumRun): string {
   const done = run.steps.filter((step) => step.status === "done").length
   const lines = [
     `${run.id} · ${run.strategy} · ${run.status}${run.ms !== undefined ? ` · ${(run.ms / 1000).toFixed(1)}s` : ""}`,
@@ -125,7 +125,7 @@ function describeRun(run: SwarmRun): string {
 }
 
 /** Renders the live step board shown on the tool card. */
-function progressStatus(run: SwarmRun): string {
+function progressStatus(run: QuorumRun): string {
   const running = run.steps.find((step) => step.status === "running")
   const done = run.steps.filter((step) => step.status === "done").length
   if (run.status !== "running") return `${run.status} · ${done}/${run.steps.length} steps`
@@ -135,7 +135,7 @@ function progressStatus(run: SwarmRun): string {
 }
 
 export default Plugin.define({
-  id: "swarm",
+  id: "quorum",
 
   async setup(ctx) {
     const context = ctx as unknown as ContextLike
@@ -146,7 +146,7 @@ export default Plugin.define({
     })
     const log = createLogger(() => store.current().debugLog)
 
-    const engine = new SwarmEngine({
+    const engine = new QuorumEngine({
       ctx: context,
       log,
       config: () => store.current(),
@@ -160,7 +160,7 @@ export default Plugin.define({
     // ---- RPC -------------------------------------------------------------
     let registration: RpcRegistrationLike | undefined
     try {
-      registration = await context.rpc.register(SwarmRpc, {
+      registration = await context.rpc.register(QuorumRpc, {
         async state() {
           return { json: JSON.stringify(await engine.state()) }
         },
@@ -203,7 +203,7 @@ export default Plugin.define({
         },
       })
     } catch (error) {
-      log("could not register the swarm RPC:", error instanceof Error ? error.message : error)
+      log("could not register the quorum RPC:", error instanceof Error ? error.message : error)
     }
 
     // Forward run changes to RPC subscribers so the dashboard is live.
@@ -221,12 +221,12 @@ export default Plugin.define({
         await context.tool.transform((editor) => {
           editor.namespace({
             name: NAMESPACE,
-            description: "Run a swarm of OpenCode models on one task and collect their merged answer",
+            description: "Run a quorum of OpenCode models on one task and collect their merged answer",
           })
           editor.add({
             name: "run",
             description:
-              "Delegate a task to a swarm of OpenCode models working in parallel (or in debate/relay/vote/divide " +
+              "Delegate a task to a quorum of OpenCode models working in parallel (or in debate/relay/vote/divide " +
               "order) and return their merged answer. Use this for hard questions, second opinions, reviews, or " +
               "work that benefits from several different models. It can also run agent workers that edit the repo. " +
               "Use `action: configure` to change the saved defaults (roster, strategy, copies) for future runs.",
@@ -237,11 +237,11 @@ export default Plugin.define({
                   type: "string",
                   enum: ["run", "status", "cancel", "models", "configure"],
                   description:
-                    "What to do. `run` (default) sends a task to the swarm. `configure` saves defaults, and " +
+                    "What to do. `run` (default) sends a task to the quorum. `configure` saves defaults, and " +
                     "reports back which settings it accepted. `models` lists usable model references, `status` " +
                     "shows recent runs, `cancel` stops one.",
                 },
-                task: { type: "string", description: "The task or question for the swarm (required for `run`)." },
+                task: { type: "string", description: "The task or question for the quorum (required for `run`)." },
                 strategy: {
                   type: "string",
                   enum: [...STRATEGIES],
@@ -259,7 +259,7 @@ export default Plugin.define({
                   minimum: 1,
                   maximum: 8,
                   description:
-                    "Run each member this many times. Above 1 this is a swarm of the same model: several " +
+                    "Run each member this many times. Above 1 this is a quorum of the same model: several " +
                     "independent attempts, each given a different framing. Useful with the `vote` strategy.",
                 },
                 aggregator: {
@@ -318,7 +318,7 @@ export default Plugin.define({
                 }
                 const runs = engine.list(5)
                 return {
-                  content: runs.length ? runs.map(describeRun).join("\n\n") : "no swarm runs yet",
+                  content: runs.length ? runs.map(describeRun).join("\n\n") : "no quorum runs yet",
                 }
               }
               if (action === "cancel") {
@@ -357,7 +357,7 @@ export default Plugin.define({
               }
 
               const task = asString(args.task)
-              if (!task) return { content: "The `task` field is required to run the swarm." }
+              if (!task) return { content: "The `task` field is required to run the quorum." }
 
               const run = await engine.start({
                 task,
@@ -380,8 +380,8 @@ export default Plugin.define({
                 const finished = await waitForRun(engine, run.id, toolContext.signal)
                 return {
                   content: finished.result
-                    ? `${describeRun(finished)}\n\n=== SWARM RESULT ===\n${finished.result}`
-                    : `${describeRun(finished)}\n\nThe swarm produced no merged answer.`,
+                    ? `${describeRun(finished)}\n\n=== QUORUM RESULT ===\n${finished.result}`
+                    : `${describeRun(finished)}\n\nThe quorum produced no merged answer.`,
                 }
               } finally {
                 stopProgress()
@@ -390,7 +390,7 @@ export default Plugin.define({
           })
         })
       } catch (error) {
-        log("could not register the swarm tool:", error instanceof Error ? error.message : error)
+        log("could not register the quorum tool:", error instanceof Error ? error.message : error)
       }
     }
 
@@ -399,8 +399,8 @@ export default Plugin.define({
       try {
         await context.command.transform((editor) => {
           editor.add({
-            name: "swarm",
-            description: "Run a swarm of models on a task, or check on the swarm",
+            name: "quorum",
+            description: "Run a quorum of models on a task, or check on the quorum",
             execute: async ({ sessionID, prompt }) => {
               const text = (prompt.text ?? "").trim()
               const [head, ...rest] = text.split(/\s+/)
@@ -413,12 +413,12 @@ export default Plugin.define({
                 context.session.synthetic({
                   sessionID,
                   text: body,
-                  description: "swarm",
-                  metadata: { source: "swarm-command" },
+                  description: "quorum",
+                  metadata: { source: "quorum-command" },
                 })
 
               if (!text || verb === "help") {
-                await post(SWARM_HELP)
+                await post(QUORUM_HELP)
                 return
               }
 
@@ -427,12 +427,12 @@ export default Plugin.define({
                 await post(
                   runs.length
                     ? runs.map(describeRun).join("\n\n")
-                    : "No swarm runs yet. Start one with `/swarm <task>`.",
+                    : "No quorum runs yet. Start one with `/quorum <task>`.",
                 )
                 return
               }
 
-              // `/swarm debate <task>` and `/swarm strategy=debate <task>` both work.
+              // `/quorum debate <task>` and `/quorum strategy=debate <task>` both work.
               let strategy: string | undefined
               let task = rest.join(" ").trim()
               if ((STRATEGIES as readonly string[]).includes(verb)) {
@@ -447,7 +447,7 @@ export default Plugin.define({
               if (!task) task = text
 
               if (!task) {
-                await post(SWARM_HELP)
+                await post(QUORUM_HELP)
                 return
               }
 
@@ -461,12 +461,12 @@ export default Plugin.define({
               const finished = await waitForRun(engine, run.id)
               await post(
                 [
-                  `The swarm (\`${finished.strategy}\`, ${finished.roster.length} models) finished ${finished.id}${
+                  `The quorum (\`${finished.strategy}\`, ${finished.roster.length} models) finished ${finished.id}${
                     finished.ms ? ` in ${(finished.ms / 1000).toFixed(1)}s` : ""
                   }.`,
                   finished.warnings.length ? `Notes: ${finished.warnings.join("; ")}` : "",
                   "",
-                  finished.result ?? finished.error ?? "(the swarm produced no answer)",
+                  finished.result ?? finished.error ?? "(the quorum produced no answer)",
                 ]
                   .filter(Boolean)
                   .join("\n"),
@@ -475,7 +475,7 @@ export default Plugin.define({
           })
         })
       } catch (error) {
-        log("could not register the swarm command:", error instanceof Error ? error.message : error)
+        log("could not register the quorum command:", error instanceof Error ? error.message : error)
       }
     }
 
@@ -486,16 +486,16 @@ export default Plugin.define({
   },
 })
 
-const SWARM_HELP = [
-  "**swarm** runs several OpenCode models on one task and merges their answers.",
+const QUORUM_HELP = [
+  "**quorum** runs several OpenCode models on one task and merges their answers.",
   "",
-  "- `/swarm <task>` — run the configured strategy on a task",
-  "- `/swarm debate <task>` — force a strategy (`mixture`, `debate`, `divide`, `relay`, `vote`)",
-  "- `/swarm status` — show recent runs",
-  "- `/swarm help` — this message",
+  "- `/quorum <task>` — run the configured strategy on a task",
+  "- `/quorum debate <task>` — force a strategy (`mixture`, `debate`, `divide`, `relay`, `vote`)",
+  "- `/quorum status` — show recent runs",
+  "- `/quorum help` — this message",
   "",
-  "Open the dashboard for a full view: it is the floating **Swarm** button in the OpenCode window. " +
-    "Settings live in `.opencode/swarm.json`.",
+  "Open the dashboard for a full view: it is the floating **Quorum** button in the OpenCode window. " +
+    "Settings live in `.opencode/quorum.json`.",
 ].join("\n")
 
 /**
@@ -503,11 +503,11 @@ const SWARM_HELP = [
  * aborted (a cancelled tool call should not keep the run pinned forever).
  */
 function waitForRun(
-  engine: SwarmEngine,
+  engine: QuorumEngine,
   runID: string,
   signal?: AbortSignal,
-): Promise<SwarmRun> {
-  return new Promise<SwarmRun>((resolve) => {
+): Promise<QuorumRun> {
+  return new Promise<QuorumRun>((resolve) => {
     const current = engine.run(runID)
     if (current && current.status !== "running") {
       resolve(current)

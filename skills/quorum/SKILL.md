@@ -1,13 +1,13 @@
 ---
-name: Swarm
+name: Quorum
 description: Run several models on one task and merge their answers. Use when a question deserves more than one model's opinion — hard problems, design decisions, reviews, or when you want two or three independent attempts before committing.
 ---
 
-# Swarm
+# Quorum
 
-A swarm sends one task to several models at once and merges what comes back. It
+A quorum sends one task to several models at once and merges what comes back. It
 runs in this OpenCode instance, using the models the user already has, via the
-`swarm` tool.
+`quorum` tool.
 
 ## When it is worth it
 
@@ -21,7 +21,7 @@ runs in this OpenCode instance, using the models the user already has, via the
 ## When it is not
 
 - Quick lookups, mechanical edits, or anything you can already answer.
-- When the user asked for speed. A swarm costs one model call per member, plus
+- When the user asked for speed. A quorum costs one model call per member, plus
   one to merge — so four members is five calls.
 - When the task needs tools and file access: prefer doing it yourself, or read the
   agent-mode note in `references/configuration.md` first, because agent workers
@@ -29,7 +29,7 @@ runs in this OpenCode instance, using the models the user already has, via the
 
 ## Running one
 
-Call the `swarm` tool with `action: "run"` (the default):
+Call the `quorum` tool with `action: "run"` (the default):
 
 ```
 action: "run"
@@ -55,7 +55,7 @@ produced it.
 
 Use `action: "models"` to see exact model references; guessing one wastes a run.
 
-## A swarm of one model
+## A quorum of one model
 
 `copies: 4` with `members` naming a single model runs four independent attempts
 and is the self-consistency pattern — use it with `vote`. Each copy is given a
@@ -64,7 +64,7 @@ control; identical prompts to one model would come back nearly identical.
 
 ## Setting defaults up for the user
 
-If the user wants a swarm *configured* rather than just run once, use
+If the user wants a quorum *configured* rather than just run once, use
 `action: "configure"`. It validates and saves, and tells you what it rejected:
 
 ```
@@ -75,7 +75,7 @@ copies: 4
 aggregator: "auto"      // or a model reference
 ```
 
-Settings persist in `.opencode/swarm.json` and are used by every later run. The
+Settings persist in `.opencode/quorum.json` and are used by every later run. The
 full field list, and what each one costs, is in
 `references/configuration.md`.
 

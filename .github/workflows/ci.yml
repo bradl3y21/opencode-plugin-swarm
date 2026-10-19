@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [24]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Parse every source file
+        shell: bash
+        run: |
+          set -e
+          for file in *.ts desktop/*.mjs desktop/*.js; do
+            node --check "$file"
+          done
+
+      - name: Build a fixture archive
+        run: node desktop/fixture.mjs --out fixture.asar
+
+      - name: Archive writer self-test
+        run: node desktop/selftest.mjs --asar fixture.asar
+
+      - name: Installer test (append-only, reversibility, malformed archive)
+        run: node desktop/installer-test.mjs --asar fixture.asar

@@ -118,9 +118,9 @@ const SKIP = new Set(["content-encoding", "content-length", "transfer-encoding",
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`)
 
-  if (url.pathname === "/swarm-panel.js") {
+  if (url.pathname === "/quorum-panel.js") {
     res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" })
-    return res.end(fs.readFileSync(path.join(here, "swarm-panel.js"), "utf8"))
+    return res.end(fs.readFileSync(path.join(here, "quorum-panel.js"), "utf8"))
   }
 
   // The desktop renderer, served verbatim from app.asar.

@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url"
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const logDir = path.join(os.homedir(), ".local", "share", "opencode", "log")
-const logFile = path.join(logDir, "swarm-install.log")
+const logFile = path.join(logDir, "quorum-install.log")
 
 const arg = (name, fallback) => {
   const index = process.argv.indexOf(name)
@@ -123,7 +123,7 @@ if (appRunning() || !writable()) {
       const crypto = await import("node:crypto")
       const hash = (file) => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex")
       const patched = hash(asar)
-      const backup = fs.existsSync(`${asar}.swarm-backup`) ? hash(`${asar}.swarm-backup`) : "(no backup)"
+      const backup = fs.existsSync(`${asar}.quorum-backup`) ? hash(`${asar}.quorum-backup`) : "(no backup)"
       say(`app.asar        ${patched.slice(0, 16)}…`)
       say(`backup          ${backup.slice(0, 16)}…`)
       say(patched !== backup ? "archive changed as intended" : "WARNING: archive is unchanged — install did not take effect")
@@ -148,7 +148,7 @@ if (appRunning() || !writable()) {
 
           if (started) {
             say("OpenCode started normally — the install is good.")
-            say("Swarm is in the title bar, beside Home and New session.")
+            say("Quorum is in the title bar, beside Home and New session.")
           } else {
             say("OpenCode did not start. Rolling back to the untouched archive…")
             try {
@@ -160,10 +160,10 @@ if (appRunning() || !writable()) {
             }
           }
         } else {
-          say("Done. Start OpenCode — Swarm is in the title bar, beside Home and New session.")
+          say("Done. Start OpenCode — Quorum is in the title bar, beside Home and New session.")
         }
       } else {
-        say("Done. Start OpenCode — Swarm is in the title bar, beside Home and New session.")
+        say("Done. Start OpenCode — Quorum is in the title bar, beside Home and New session.")
       }
     }
   }

@@ -16,12 +16,14 @@
  */
 
 import fs from "node:fs"
-import { findAsar, leaves, patchArchive, patchHtml, readAsar, unpatchHtml } from "./install.mjs"
+import { isPatchedHtml, leaves, patchArchive, patchHtml, readAsar, unpatchHtml } from "./install.mjs"
+import { resolveArchive } from "./fixture.mjs"
 
 const HTML_ENTRY = "/out/renderer/index.html"
-const MARKER = "<!-- swarm-dashboard -->"
+const MARKER = "<!-- quorum-dashboard -->"
 
-const asar = findAsar()
+const asarFlag = process.argv.indexOf("--asar")
+const asar = await resolveArchive(asarFlag === -1 ? undefined : process.argv[asarFlag + 1])
 const original = fs.readFileSync(asar)
 const { header, blob, json } = readAsar(asar)
 
@@ -44,8 +46,8 @@ const probeBefore = leaves(probeArchive.header).map((entry) => ({
   path: entry.path,
   signature: `${entry.node.offset}:${entry.node.size}`,
 }))
-const PROBE_PATH = "/swarm-selftest-probe.js"
-const probeBytes = Buffer.from("// swarm selftest probe\n", "utf8")
+const PROBE_PATH = "/quorum-selftest-probe.js"
+const probeBytes = Buffer.from("// quorum selftest probe\n", "utf8")
 const probePatched = patchArchive(probeArchive.header, probeArchive.blob, {
   replaced: new Map([[HTML_ENTRY, Buffer.from("<!-- probe -->", "utf8")]]),
   added: new Map([[PROBE_PATH, probeBytes]]),
@@ -125,7 +127,7 @@ check("renderer directory is present", files.some((entry) => entry.path.startsWi
 if (html) {
   const offset = Number(html.node.offset)
   const current = blob.subarray(offset, offset + Number(html.node.size)).toString("utf8")
-  const patched = current.includes(MARKER)
+  const patched = isPatchedHtml(current)
   console.log(`      archive state: ${patched ? "already patched" : "pristine"}`)
 
   if (patched) {
@@ -140,7 +142,7 @@ if (html) {
     check("re-patching replaces the installed block", patchHtml(current) === basePatched)
     check("the block accounts for exactly two scripts", countScripts(basePatched) === countScripts(base) + 2)
     check("the base form still loads the app", base.includes("assets/main-"))
-    check("capture runs before the app's module", basePatched.indexOf("__swarmNet") < basePatched.indexOf("assets/main-"))
+    check("capture runs before the app's module", basePatched.indexOf("__quorumNet") < basePatched.indexOf("assets/main-"))
     check("keeps </head>", basePatched.includes("</head>"))
   } else {
     const once = patchHtml(current)
@@ -148,10 +150,29 @@ if (html) {
     check("html patch is reversible", unpatchHtml(once) === current)
     check("html patch adds two scripts", countScripts(once) === countScripts(current) + 2)
     check("patch is placed before the app's module", once.indexOf(MARKER) < once.indexOf("assets/main-"))
-    check("network capture is inline", once.includes("__swarmNet"))
+    check("network capture is inline", once.includes("__quorumNet"))
     check("html patch keeps </head>", once.includes("</head>"))
   }
 }
+
+// An archive patched under the plugin's old name must be migrated, not added to:
+// two blocks would load two panels.
+const legacyBase =
+  '<html><head><title>t</title><script type="module" src="./assets/main-x.js"></script></head><body></body></html>'
+const legacyBlock = patchHtml(legacyBase)
+  .split("<!-- quorum-dashboard -->")
+  .join("<!-- swarm-dashboard -->")
+  .split("<!-- /quorum-dashboard -->")
+  .join("<!-- /swarm-dashboard -->")
+  .split("quorum-panel.js")
+  .join("swarm-panel.js")
+check("a legacy block is recognised as patched", isPatchedHtml(legacyBlock))
+const migrated = patchHtml(legacyBlock)
+check("migrating a legacy block leaves one panel", (migrated.match(/quorum-dashboard/g) ?? []).length === 2)
+check("migrating a legacy block removes it", !migrated.includes("swarm-dashboard"))
+check("migrating a legacy block keeps two scripts", countScripts(migrated) === countScripts(legacyBase) + 2)
+check("migration is idempotent", patchHtml(migrated) === migrated)
+check("migration is reversible", unpatchHtml(migrated) === legacyBase)
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed — do not install.`)
 process.exitCode = failures === 0 ? 0 : 1

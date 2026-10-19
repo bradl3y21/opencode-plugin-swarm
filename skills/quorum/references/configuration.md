@@ -1,10 +1,10 @@
-# Swarm configuration
+# Quorum configuration
 
-Settings live in `.opencode/swarm.json` (project) or `~/.config/opencode/swarm.json`
+Settings live in `.opencode/quorum.json` (project) or `~/.config/opencode/quorum.json`
 (global). The project file wins. The plugin re-reads it immediately, so a change
 applies to the next run without restarting anything.
 
-Prefer `action: "configure"` on the `swarm` tool: it validates values and tells
+Prefer `action: "configure"` on the `quorum` tool: it validates values and tells
 you what it rejected. Hand-editing this file works too, and `copies: …` is the
 kind of setting a user may prefer to keep.
 
@@ -29,7 +29,7 @@ Turn `autoMembers` down, or pin cheaper `members`, when a run needs to be cheap.
 | `enabled` | `true` | Master switch. |
 | `strategy` | `"mixture"` | `mixture`, `debate`, `divide`, `relay`, `vote`. |
 | `members` | `[]` | Models as `"providerID/modelID"`. A bare `modelID` resolves too. Repeats are kept — naming one model four times runs it four times. Empty means automatic. |
-| `copies` | `1` | Run each member this many times (1–8). Above 1, a swarm of the same model, each copy differently framed. |
+| `copies` | `1` | Run each member this many times (1–8). Above 1, a quorum of the same model, each copy differently framed. |
 | `aggregator` | first member | Model that merges the members' work. `auto` restores the default. |
 | `planner` | first member | Model that splits the task, for `divide`. |
 | `judge` | first member | Model that picks the winner, for `vote`. |
@@ -42,11 +42,11 @@ Turn `autoMembers` down, or pin cheaper `members`, when a run needs to be cheap.
 | `maxOutputChars` | `6000` | Truncate each answer before it reaches the aggregator — this is a real cost control, since every answer is pasted into the merge prompt. |
 | `keepWorkerSessions` | `true` | Keep agent-mode worker sessions so they can be inspected. |
 | `streamToSession` | `true` | Mirror progress into the session that started the run. |
-| `tool` | `true` | Register the `swarm` tool. **Needs a reload.** |
-| `command` | `true` | Register the `/swarm` command. **Needs a reload.** |
-| `debugLog` | `true` | Append activity to `~/.local/share/opencode/log/swarm.log`. |
+| `tool` | `true` | Register the `quorum` tool. **Needs a reload.** |
+| `command` | `true` | Register the `/quorum` command. **Needs a reload.** |
+| `debugLog` | `true` | Append activity to `~/.local/share/opencode/log/quorum.log`. |
 
-Environment variables mirror these: `OPENCODE_SWARM_STRATEGY`, `_MEMBERS`
+Environment variables mirror these: `OPENCODE_QUORUM_STRATEGY`, `_MEMBERS`
 (comma separated), `_COPIES`, `_AGGREGATOR`, `_WORKER_MODE`, `_ROUNDS`,
 `_CONCURRENCY`, `_AUTO_MEMBERS`, `_TIMEOUT_MS`, `_AGENT_TIMEOUT_MS`,
 `_MAX_OUTPUT_CHARS`, `_TOOL`, `_COMMAND`, `_DEBUG_LOG`.
@@ -60,7 +60,7 @@ commands and **edit the repository**. Before choosing it:
 
 - every member works on the same checkout, so two models editing one file will
   conflict. For anything destructive, use a separate worktree or keep `text`.
-- worker sessions are named `swarm · <role> · <model>` and nested under the
+- worker sessions are named `quorum · <role> · <model>` and nested under the
   session that started the run; `keepWorkerSessions: false` removes them once
   their answer is harvested.
 - agent runs are far slower and more expensive than text runs.
@@ -71,7 +71,7 @@ commands and **edit the repository**. Before choosing it:
 
 ## Choosing models
 
-With `members` empty the swarm picks for you: it starts from the model the user is
+With `members` empty the quorum picks for you: it starts from the model the user is
 already running, adds one model per provider, skips models that failed recently
 (15 minutes) and favours models that answered recently (an hour). It deprioritises
 giveaway tiers (`-free`, `-contributor`, `-preview`), which in practice are the

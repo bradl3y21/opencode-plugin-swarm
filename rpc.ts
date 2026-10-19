@@ -1,11 +1,11 @@
 import { Rpc } from "@opencode/plugin"
 
 /**
- * The swarm RPC contract.
+ * The quorum RPC contract.
  *
  * It is shared by three callers: the desktop dashboard (over HTTP), the
  * terminal UI (through `context.client.rpc`), and anything else that wants to
- * drive the swarm.
+ * drive the quorum.
  *
  * Every payload crosses the wire as a JSON string inside a `{ json }` envelope.
  * That keeps the contract stable as the run shape grows, and sidesteps schema
@@ -26,8 +26,8 @@ const envelopeOutput = {
   additionalProperties: false,
 } as const
 
-export const SwarmRpc = Rpc.define({
-  id: "swarm",
+export const QuorumRpc = Rpc.define({
+  id: "quorum",
   methods: {
     /**
      * Everything a dashboard needs to draw itself: config, runs, models.

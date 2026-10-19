@@ -3,15 +3,15 @@ import os from "node:os"
 import path from "node:path"
 
 /**
- * Swarm logging.
+ * Quorum logging.
  *
  * OpenCode does not capture plugin console output in its own log, so every
- * line is appended to `~/.local/share/opencode/log/swarm.log` as well as the
- * console. The dashboard and the `/swarm activity` action read this file.
+ * line is appended to `~/.local/share/opencode/log/quorum.log` as well as the
+ * console. The dashboard and the `/quorum activity` action read this file.
  */
 
 const LOG_DIR = path.join(os.homedir(), ".local", "share", "opencode", "log")
-const LOG_FILE = path.join(LOG_DIR, "swarm.log")
+const LOG_FILE = path.join(LOG_DIR, "quorum.log")
 const MAX_BYTES = 512 * 1024
 
 export type Log = (...args: unknown[]) => void
@@ -57,7 +57,7 @@ export function createLogger(enabled: () => boolean): Log {
   return (...args: unknown[]) => {
     const line = `${new Date().toISOString()} ${format(args)}`
     if (enabled()) {
-      console.log(`[swarm] ${format(args)}`)
+      console.log(`[quorum] ${format(args)}`)
       append(line)
     }
   }

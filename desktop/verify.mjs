@@ -14,13 +14,13 @@
 import fs from "node:fs"
 import { findAsar, leaves, readAsar } from "./install.mjs"
 
-const PANEL_ENTRY = "/out/renderer/swarm-panel.js"
+const PANEL_ENTRY = "/out/renderer/quorum-panel.js"
 const HTML_ENTRY = "/out/renderer/index.html"
-const MARKER = "<!-- swarm-dashboard -->"
+const MARKER = "<!-- quorum-dashboard -->"
 
 const asarFlag = process.argv.indexOf("--asar")
 const asar = asarFlag === -1 ? findAsar() : process.argv[asarFlag + 1]
-const backup = `${asar}.swarm-backup`
+const backup = `${asar}.quorum-backup`
 
 let failures = 0
 const check = (label, ok, detail = "") => {
@@ -52,7 +52,7 @@ if (!fs.existsSync(backup)) {
     `${beforeLeaves.length} -> ${afterLeaves.length}`)
 
   // The panel must match the source file on disk exactly.
-  const source = fs.readFileSync(new URL("./swarm-panel.js", import.meta.url))
+  const source = fs.readFileSync(new URL("./quorum-panel.js", import.meta.url))
   const panel = readEntry(after, afterByPath.get(PANEL_ENTRY))
   check("panel content matches the source file", Boolean(panel) && panel.equals(source),
     panel ? `${panel.length} vs ${source.length} bytes` : "missing")
@@ -61,10 +61,10 @@ if (!fs.existsSync(backup)) {
   const html = readEntry(after, afterByPath.get(HTML_ENTRY))?.toString("utf8") ?? ""
   const original = readEntry(before, beforeByPath.get(HTML_ENTRY))?.toString("utf8") ?? ""
   check("index.html carries the marker", html.includes(MARKER))
-  check("index.html loads the panel", html.includes('src="./swarm-panel.js"'))
+  check("index.html loads the panel", html.includes('src="./quorum-panel.js"'))
   check("index.html still loads the app", html.includes("assets/main-"))
-  check("capture runs before the app's module", html.indexOf("__swarmNet") < html.indexOf("assets/main-"))
-  const stripped = html.replace(/<!-- swarm-dashboard -->[\s\S]*?<!-- \/swarm-dashboard -->/, "")
+  check("capture runs before the app's module", html.indexOf("__quorumNet") < html.indexOf("assets/main-"))
+  const stripped = html.replace(/<!-- quorum-dashboard -->[\s\S]*?<!-- \/quorum-dashboard -->/, "")
   check("removing the block restores index.html exactly", stripped === original,
     `${original.length} -> ${html.length} bytes`)
 

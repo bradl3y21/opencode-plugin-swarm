@@ -1,5 +1,5 @@
 /**
- * Prompt templates for every role in the swarm.
+ * Prompt templates for every role in the quorum.
  *
  * They are deliberately short and firm about output shape: the aggregator and
  * the planner both parse worker output, so a chatty answer costs the run.
@@ -61,7 +61,7 @@ export function aggregatePrompt(task: string, answers: Array<{ role: string; tex
 
 export function planPrompt(task: string, maxParts: number): string {
   return [
-    "You are the planner for a swarm of AI models. Split the request into independent subtasks.",
+    "You are the planner for a quorum of AI models. Split the request into independent subtasks.",
     `Return between 2 and ${maxParts} subtasks. Each must be doable on its own, without seeing the others' work.`,
     "Reply with JSON only, in exactly this shape and nothing else:",
     '{"subtasks":[{"title":"short label","instruction":"what to produce"}]}',
@@ -73,10 +73,10 @@ export function planPrompt(task: string, maxParts: number): string {
 
 export function subtaskPrompt(task: string, title: string, instruction: string): string {
   return [
-    `You are one worker in a swarm of AI models handling a larger request. Your assigned subtask: ${title}`,
+    `You are one worker in a quorum of AI models handling a larger request. Your assigned subtask: ${title}`,
     "",
     "Produce the complete output for your subtask. Assume the other subtasks are handled elsewhere.",
-    "No preamble, no meta-commentary about the swarm.",
+    "No preamble, no meta-commentary about the quorum.",
     "",
     "YOUR SUBTASK",
     instruction,
@@ -94,7 +94,7 @@ export function mergePrompt(task: string, parts: Array<{ title: string; text: st
     })
     .join("\n\n")
   return [
-    "You are the aggregator for a swarm of AI models that each completed one subtask of a larger request.",
+    "You are the aggregator for a quorum of AI models that each completed one subtask of a larger request.",
     "Combine their work into ONE coherent, complete answer to the original request.",
     "Remove duplication, order it sensibly, and keep every concrete detail. Do not report on the process.",
     "",

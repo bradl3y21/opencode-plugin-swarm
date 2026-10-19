@@ -202,7 +202,7 @@ export function autoRoster(models: ModelOption[], count: number, options: AutoRo
  * friendlier than dropping the model. Repeats are kept as-is, so listing a model
  * more than once asks for several attempts from it. Anything that still cannot
  * be matched is reported, so a typo is visible instead of silently shrinking the
- * swarm.
+ * quorum.
  */
 export function resolveRoster(
   models: ModelOption[],

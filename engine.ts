@@ -1,4 +1,4 @@
-import { type SwarmConfig, type Strategy, type WorkerMode } from "./config"
+import { type QuorumConfig, type Strategy, type WorkerMode } from "./config"
 import { logFilePath } from "./log"
 import {
   autoRoster,
@@ -23,7 +23,7 @@ import {
 } from "./prompts"
 
 /**
- * The swarm engine.
+ * The quorum engine.
  *
  * A "run" takes a task, sends it to several models at the same time (or in a
  * deliberate order, depending on the strategy), and merges what comes back into
@@ -37,7 +37,7 @@ import {
 
 export type StepStatus = "pending" | "running" | "done" | "failed" | "cancelled"
 
-export interface SwarmStep {
+export interface QuorumStep {
   id: string
   /** What this step is doing, e.g. "member" or "aggregator". */
   kind: "member" | "planner" | "aggregator" | "judge" | "relay" | "subtask"
@@ -56,7 +56,7 @@ export interface SwarmStep {
   sessionID?: string
 }
 
-export interface SwarmRun {
+export interface QuorumRun {
   id: string
   task: string
   strategy: Strategy
@@ -67,7 +67,7 @@ export interface SwarmRun {
   ms?: number
   roster: string[]
   aggregator?: string
-  steps: SwarmStep[]
+  steps: QuorumStep[]
   result?: string
   error?: string
   /** The session this run was started from, when there was one. */
@@ -76,10 +76,10 @@ export interface SwarmRun {
   warnings: string[]
 }
 
-export interface SwarmState {
+export interface QuorumState {
   version: string
   directory?: string
-  config: SwarmConfig
+  config: QuorumConfig
   sources: string[]
   models: Array<{
     key: string
@@ -89,7 +89,7 @@ export interface SwarmState {
     provider: string
     tools: boolean
   }>
-  runs: SwarmRun[]
+  runs: QuorumRun[]
   logPath: string
   capabilities: {
     /** Agent mode creates real sessions that can edit files. */
@@ -104,11 +104,11 @@ export interface RunInput {
   members?: string[]
   aggregator?: string
   workerMode?: string
-  /** How many times to run each member; above 1, a swarm of the same model. */
+  /** How many times to run each member; above 1, a quorum of the same model. */
   copies?: number
   sessionID?: string
   parentID?: string
-  source?: SwarmRun["source"]
+  source?: QuorumRun["source"]
 }
 
 // ---------------------------------------------------------------------------
@@ -252,7 +252,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
  * A transient generation takes only a prompt and a model — there is no
  * temperature or sampling control — so several copies of one prompt would come
  * back much the same. Giving each copy a different lens is what makes a
- * same-model swarm worth running: the copies then disagree in useful ways, and
+ * same-model quorum worth running: the copies then disagree in useful ways, and
  * the aggregator has something real to merge.
  */
 const ANGLES = [
@@ -282,22 +282,22 @@ export interface EngineOptions {
   ctx: EngineContext
   log: Logger
   /** Live config, re-read on every access so edits apply without a restart. */
-  config: () => SwarmConfig
+  config: () => QuorumConfig
   sources: () => string[]
-  /** Module-scope swarm version string, shown in the dashboard. */
+  /** Module-scope quorum version string, shown in the dashboard. */
   version: string
 }
 
-export class SwarmEngine {
+export class QuorumEngine {
   private readonly ctx: EngineContext
   private readonly log: Logger
-  private readonly config: () => SwarmConfig
+  private readonly config: () => QuorumConfig
   private readonly sources: () => string[]
   private readonly version: string
 
-  private readonly runs = new Map<string, SwarmRun>()
+  private readonly runs = new Map<string, QuorumRun>()
   private readonly cancelled = new Set<string>()
-  private readonly listeners = new Set<(run: SwarmRun) => void>()
+  private readonly listeners = new Set<(run: QuorumRun) => void>()
   private modelsCache?: { at: number; models: ModelOption[] }
   private preferredCache?: { at: number; models: ModelRef[] }
   /** modelKey -> when it last failed, so the auto roster can steer around it. */
@@ -321,12 +321,12 @@ export class SwarmEngine {
 
   // ---- observation -------------------------------------------------------
 
-  onUpdate(listener: (run: SwarmRun) => void): () => void {
+  onUpdate(listener: (run: QuorumRun) => void): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
   }
 
-  private emit(run: SwarmRun): void {
+  private emit(run: QuorumRun): void {
     const snapshot = this.clone(run)
     for (const listener of this.listeners) {
       try {
@@ -338,16 +338,16 @@ export class SwarmEngine {
     void this.streamToSession(snapshot)
   }
 
-  private clone(run: SwarmRun): SwarmRun {
+  private clone(run: QuorumRun): QuorumRun {
     return { ...run, steps: run.steps.map((step) => ({ ...step })), warnings: [...run.warnings] }
   }
 
-  run(id: string): SwarmRun | undefined {
+  run(id: string): QuorumRun | undefined {
     const found = this.runs.get(id)
     return found ? this.clone(found) : undefined
   }
 
-  list(limit = 25): SwarmRun[] {
+  list(limit = 25): QuorumRun[] {
     return [...this.runs.values()]
       .sort((a, b) => b.startedAt - a.startedAt)
       .slice(0, limit)
@@ -396,7 +396,7 @@ export class SwarmEngine {
     return models
   }
 
-  async state(): Promise<SwarmState> {
+  async state(): Promise<QuorumState> {
     const models = await this.models()
     return {
       version: this.version,
@@ -437,7 +437,7 @@ export class SwarmEngine {
    * automatic roster prefer a model that is at least answering.
    */
   private recentFailures(): Set<string> {
-    const cutoff = Date.now() - SwarmEngine.FAILURE_MEMORY_MS
+    const cutoff = Date.now() - QuorumEngine.FAILURE_MEMORY_MS
     const out = new Set<string>()
     for (const [key, at] of this.failures) {
       if (at >= cutoff) out.add(key)
@@ -448,7 +448,7 @@ export class SwarmEngine {
 
   /** And the mirror: models that have recently produced an answer. */
   private recentSuccesses(): Set<string> {
-    const cutoff = Date.now() - SwarmEngine.SUCCESS_MEMORY_MS
+    const cutoff = Date.now() - QuorumEngine.SUCCESS_MEMORY_MS
     const out = new Set<string>()
     for (const [key, at] of this.successes) {
       if (at >= cutoff) out.add(key)
@@ -514,14 +514,14 @@ export class SwarmEngine {
 
   // ---- running -----------------------------------------------------------
 
-  async start(input: RunInput): Promise<SwarmRun> {
+  async start(input: RunInput): Promise<QuorumRun> {
     const config = this.config()
     const strategy = (input.strategy && this.validStrategy(input.strategy)) || config.strategy
     const workerMode = (input.workerMode && this.validMode(input.workerMode)) || config.workerMode
 
     const { roster, aggregator, warnings } = await this.resolveRoster(input, strategy)
 
-    // Copies turn "one agent" into "a swarm of that agent": the same model run
+    // Copies turn "one agent" into "a quorum of that agent": the same model run
     // several times over. With no sampling control available, identical prompts
     // would produce near-identical answers, so each copy is given a different
     // framing — that is what makes consensus or comparison meaningful.
@@ -531,8 +531,8 @@ export class SwarmEngine {
       warnings.push(`${copies} copies of ${roster.map((model) => model.id).join(", ")}`)
     }
 
-    const run: SwarmRun = {
-      id: `swarm_${shortID()}`,
+    const run: QuorumRun = {
+      id: `quorum_${shortID()}`,
       task: input.task,
       strategy,
       workerMode,
@@ -571,7 +571,7 @@ export class SwarmEngine {
   }
 
   /** Runs the configured strategy to completion. */
-  private async execute(run: SwarmRun, roster: ModelOption[], aggregator?: ModelOption): Promise<void> {
+  private async execute(run: QuorumRun, roster: ModelOption[], aggregator?: ModelOption): Promise<void> {
     const config = this.config()
     if (roster.length === 0) {
       run.warnings.push("no members to run")
@@ -616,7 +616,7 @@ export class SwarmEngine {
   // ---- strategy: mixture -------------------------------------------------
 
   private async runMixture(
-    run: SwarmRun,
+    run: QuorumRun,
     roster: ModelOption[],
     aggregator: ModelOption | undefined,
     isCancelled: () => boolean,
@@ -632,7 +632,7 @@ export class SwarmEngine {
     this.emit(run)
 
     const answers = await pool(
-      roster.map((model, index) => ({ model, step: steps[index] as SwarmStep })),
+      roster.map((model, index) => ({ model, step: steps[index] as QuorumStep })),
       config.concurrency,
       async ({ model, step }) => {
         if (isCancelled()) return { role: model.id, text: "", error: "cancelled" }
@@ -648,7 +648,7 @@ export class SwarmEngine {
   // ---- strategy: debate --------------------------------------------------
 
   private async runDebate(
-    run: SwarmRun,
+    run: QuorumRun,
     roster: ModelOption[],
     aggregator: ModelOption | undefined,
     isCancelled: () => boolean,
@@ -670,7 +670,7 @@ export class SwarmEngine {
       this.emit(run)
 
       await pool(
-        roster.map((model, index) => ({ model, step: steps[index] as SwarmStep })),
+        roster.map((model, index) => ({ model, step: steps[index] as QuorumStep })),
         config.concurrency,
         async ({ model, step }) => {
           if (isCancelled()) return { role: model.id, text: "", error: "cancelled" }
@@ -709,7 +709,7 @@ export class SwarmEngine {
   // ---- strategy: divide --------------------------------------------------
 
   private async runDivide(
-    run: SwarmRun,
+    run: QuorumRun,
     roster: ModelOption[],
     aggregator: ModelOption | undefined,
     isCancelled: () => boolean,
@@ -750,7 +750,7 @@ export class SwarmEngine {
     this.emit(run)
 
     const parts = await pool(
-      subtasks.map((subtask, index) => ({ subtask, step: steps[index] as SwarmStep })),
+      subtasks.map((subtask, index) => ({ subtask, step: steps[index] as QuorumStep })),
       config.concurrency,
       async ({ subtask, step }, index) => {
         if (isCancelled()) return { title: subtask.title, text: "", error: "cancelled" }
@@ -779,7 +779,7 @@ export class SwarmEngine {
 
   // ---- strategy: relay ---------------------------------------------------
 
-  private async runRelay(run: SwarmRun, roster: ModelOption[], isCancelled: () => boolean): Promise<void> {
+  private async runRelay(run: QuorumRun, roster: ModelOption[], isCancelled: () => boolean): Promise<void> {
     let draft = ""
     for (const model of roster) {
       if (isCancelled()) return
@@ -796,7 +796,7 @@ export class SwarmEngine {
   // ---- strategy: vote ----------------------------------------------------
 
   private async runVote(
-    run: SwarmRun,
+    run: QuorumRun,
     roster: ModelOption[],
     aggregator: ModelOption | undefined,
     isCancelled: () => boolean,
@@ -806,7 +806,7 @@ export class SwarmEngine {
     this.emit(run)
 
     const answers = await pool(
-      roster.map((model, index) => ({ model, step: steps[index] as SwarmStep })),
+      roster.map((model, index) => ({ model, step: steps[index] as QuorumStep })),
       config.concurrency,
       async ({ model, step }) => {
         if (isCancelled()) return { role: model.id, text: "", error: "cancelled" }
@@ -855,7 +855,7 @@ export class SwarmEngine {
   // ---- aggregation -------------------------------------------------------
 
   private async aggregate(
-    run: SwarmRun,
+    run: QuorumRun,
     aggregator: ModelOption | undefined,
     answers: Array<{ role: string; text: string; error?: string }>,
     isCancelled: () => boolean,
@@ -897,8 +897,8 @@ export class SwarmEngine {
 
   // ---- workers -----------------------------------------------------------
 
-  private addStep(run: SwarmRun, step: Omit<SwarmStep, "id" | "status">): SwarmStep {
-    const created: SwarmStep = { id: `step_${shortID()}`, status: "pending", ...step }
+  private addStep(run: QuorumRun, step: Omit<QuorumStep, "id" | "status">): QuorumStep {
+    const created: QuorumStep = { id: `step_${shortID()}`, status: "pending", ...step }
     run.steps.push(created)
     return created
   }
@@ -912,8 +912,8 @@ export class SwarmEngine {
    * costs minutes for no benefit.
    */
   private async callWorker(
-    run: SwarmRun,
-    step: SwarmStep,
+    run: QuorumRun,
+    step: QuorumStep,
     model: ModelOption,
     prompt: string,
     mode: "text" | "agent" = run.workerMode,
@@ -993,17 +993,17 @@ export class SwarmEngine {
    * the clock alone is what made finished agent work look timed out.
    */
   private async runAgentWorker(
-    run: SwarmRun,
-    step: SwarmStep,
+    run: QuorumRun,
+    step: QuorumStep,
     model: ModelOption,
     prompt: string,
   ): Promise<string> {
     const config = this.config()
     const created = await this.ctx.session.create({
-      title: `swarm · ${step.kind} · ${shortModel(model)}`,
+      title: `quorum · ${step.kind} · ${shortModel(model)}`,
       parentID: run.sessionID,
       model: { providerID: model.providerID, id: model.id },
-      metadata: { swarmRunID: run.id, swarmStepID: step.id },
+      metadata: { quorumRunID: run.id, quorumStepID: step.id },
     })
     const session = unwrap<{ id?: string }>(created)
     const sessionID = asString(session?.id)
@@ -1081,7 +1081,7 @@ export class SwarmEngine {
 
   // ---- lifecycle ---------------------------------------------------------
 
-  private finish(run: SwarmRun, status: SwarmRun["status"], result?: string): void {
+  private finish(run: QuorumRun, status: QuorumRun["status"], result?: string): void {
     if (run.status !== "running") return
     run.status = status
     run.finishedAt = Date.now()
@@ -1099,10 +1099,10 @@ export class SwarmEngine {
 
   /**
    * Mirrors the run into the originating session as a synthetic message so the
-   * swarm is visible in the chat timeline. Throttled, because a run can emit
+   * quorum is visible in the chat timeline. Throttled, because a run can emit
    * several updates per second.
    */
-  private async streamToSession(run: SwarmRun): Promise<void> {
+  private async streamToSession(run: QuorumRun): Promise<void> {
     const config = this.config()
     if (!config.streamToSession || !run.sessionID) return
 
@@ -1122,7 +1122,7 @@ export class SwarmEngine {
       .join(", ")
     const active = run.steps.find((step) => step.status === "running")
     const lines = [
-      `swarm ${run.id} · ${run.strategy} · ${run.status}`,
+      `quorum ${run.id} · ${run.strategy} · ${run.status}`,
       `task: ${run.task.slice(0, 160)}`,
       `steps: ${summary || "waiting"}`,
       active ? `running: ${active.label}` : "",
@@ -1133,8 +1133,8 @@ export class SwarmEngine {
       await this.ctx.session.synthetic({
         sessionID: run.sessionID,
         text: lines.join("\n"),
-        description: `swarm ${run.id}`,
-        metadata: { swarmRunID: run.id, status: run.status },
+        description: `quorum ${run.id}`,
+        metadata: { quorumRunID: run.id, status: run.status },
       })
     } catch (error) {
       // Streaming is a nicety; never let it fail a run.
@@ -1143,8 +1143,8 @@ export class SwarmEngine {
   }
 
   /** Describes a run in one line per step. Used by the tool and the command. */
-  formatResult(run: SwarmRun): string {
-    const header = `swarm ${run.id} · ${run.strategy} · ${run.status} · ${run.steps.filter((s) => s.status === "done").length}/${run.steps.length} steps`
+  formatResult(run: QuorumRun): string {
+    const header = `quorum ${run.id} · ${run.strategy} · ${run.status} · ${run.steps.filter((s) => s.status === "done").length}/${run.steps.length} steps`
     const body = run.result ?? run.error ?? "(no result)"
     return `${header}\n\n${body}`
   }

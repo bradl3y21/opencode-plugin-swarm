@@ -1,4 +1,4 @@
-import { STRATEGIES, WORKER_MODES, type SwarmConfig } from "./config"
+import { STRATEGIES, WORKER_MODES, type QuorumConfig } from "./config"
 
 /**
  * Tool-argument handling for saved configuration.
@@ -26,7 +26,7 @@ function asList(value: unknown): string[] | undefined {
 }
 
 /** The live configuration, rendered for tool output. */
-export function describeConfig(config: SwarmConfig): string {
+export function describeConfig(config: QuorumConfig): string {
   return JSON.stringify(
     {
       strategy: config.strategy,

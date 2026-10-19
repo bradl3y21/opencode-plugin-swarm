@@ -60,10 +60,10 @@ function discoverUpstream() {
 
 const upstream = discoverUpstream()
 const auth = "Basic " + Buffer.from(`opencode:${password}`).toString("base64")
-const panelPath = path.join(here, "swarm-panel.js")
+const panelPath = path.join(here, "quorum-panel.js")
 
 const html = () => `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>swarm harness</title>
+<html lang="en"><head><meta charset="utf-8"><title>quorum harness</title>
 <style>body{margin:0;font:13px system-ui;background:#0d0d0d;color:#eee}#fake{padding:40px}</style>
 </head><body>
 <div id="fake"><h1>Pretend OpenCode app</h1><p id="status">booting…</p></div>
@@ -74,7 +74,7 @@ const html = () => `<!doctype html>
     document.getElementById("status").textContent = "app connected to " + ((j.urls && j.urls[0]) || "?") + " (v" + j.version + ")";
   }).catch(function (e) { document.getElementById("status").textContent = "app error: " + e.message });
 </script>
-<script type="module" src="/swarm-panel.js"></script>
+<script type="module" src="/quorum-panel.js"></script>
 </body></html>`
 
 const server = http.createServer(async (req, res) => {
@@ -85,7 +85,7 @@ const server = http.createServer(async (req, res) => {
     res.end(html())
     return
   }
-  if (url.pathname === "/swarm-panel.js") {
+  if (url.pathname === "/quorum-panel.js") {
     // Read per request so edits are picked up on a page refresh.
     res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" })
     res.end(fs.readFileSync(panelPath, "utf8"))
@@ -123,7 +123,7 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(port, "127.0.0.1", () => {
-  console.log(`swarm dashboard harness: http://127.0.0.1:${port}/`)
+  console.log(`quorum dashboard harness: http://127.0.0.1:${port}/`)
   console.log(`  panel     ${panelPath}`)
   console.log(`  upstream  ${upstream}`)
   console.log(`  directory ${project}`)

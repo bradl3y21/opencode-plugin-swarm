@@ -3,13 +3,13 @@ import os from "node:os"
 import path from "node:path"
 
 /**
- * Configuration for the swarm plugin.
+ * Configuration for the quorum plugin.
  *
  * Resolution order (later wins):
  *   1. built-in defaults
- *   2. `~/.config/opencode/swarm.json`      (global)
- *   3. `<project>/.opencode/swarm.json`     (project)
- *   4. `OPENCODE_SWARM_*` environment variables
+ *   2. `~/.config/opencode/quorum.json`      (global)
+ *   3. `<project>/.opencode/quorum.json`     (project)
+ *   4. `OPENCODE_QUORUM_*` environment variables
  *   5. plugin `options` from `opencode.json(c)`
  *
  * The dashboard writes the project file, and the running plugin re-reads it the
@@ -22,12 +22,12 @@ export type Strategy = (typeof STRATEGIES)[number]
 export const WORKER_MODES = ["text", "agent"] as const
 export type WorkerMode = (typeof WORKER_MODES)[number]
 
-export interface SwarmConfig {
+export interface QuorumConfig {
   /** Master switch. Turn off to keep the plugin loaded but idle. */
   enabled: boolean
   strategy: Strategy
   /**
-   * Members of the swarm, written as `providerID/modelID`. Empty means
+   * Members of the quorum, written as `providerID/modelID`. Empty means
    * "pick automatically", which chooses a diverse roster from the models the
    * user has enabled (see `autoMembers`).
    */
@@ -47,7 +47,7 @@ export interface SwarmConfig {
   /** Debate rounds (including the opening round). */
   rounds: number
   /**
-   * How many times to run each member. Above 1 this is a swarm of the same
+   * How many times to run each member. Above 1 this is a quorum of the same
    * model: several independent attempts, each given a deliberately different
    * framing so they do not simply repeat each other.
    */
@@ -75,20 +75,20 @@ export interface SwarmConfig {
   maxOutputChars: number
   /**
    * Stream progress into the session that started the run as synthetic
-   * messages, so the swarm is visible in the chat timeline.
+   * messages, so the quorum is visible in the chat timeline.
    */
   streamToSession: boolean
-  /** Register the `swarm` tool so the agent can run the swarm itself. */
+  /** Register the `quorum` tool so the agent can run the quorum itself. */
   tool: boolean
-  /** Register the `/swarm` command. */
+  /** Register the `/quorum` command. */
   command: boolean
   /** Keep worker sessions after an agent-mode run so you can inspect them. */
   keepWorkerSessions: boolean
-  /** Append plugin activity to `~/.local/share/opencode/log/swarm.log`. */
+  /** Append plugin activity to `~/.local/share/opencode/log/quorum.log`. */
   debugLog: boolean
 }
 
-export const DEFAULTS: SwarmConfig = {
+export const DEFAULTS: QuorumConfig = {
   enabled: true,
   strategy: "mixture",
   members: [],
@@ -151,7 +151,7 @@ function readJson(file: string): unknown {
       return JSON.parse(raw.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, ""))
     }
   } catch (error) {
-    console.error(`[swarm] could not read ${file}:`, error instanceof Error ? error.message : error)
+    console.error(`[quorum] could not read ${file}:`, error instanceof Error ? error.message : error)
     return undefined
   }
 }
@@ -181,42 +181,42 @@ function asList(value: string | undefined): string[] | undefined {
 function fromEnv(): Record<string, unknown> {
   const env = process.env
   const out: Record<string, unknown> = {}
-  const enabled = asBool(env.OPENCODE_SWARM_ENABLED)
+  const enabled = asBool(env.OPENCODE_QUORUM_ENABLED)
   if (enabled !== undefined) out.enabled = enabled
-  if (env.OPENCODE_SWARM_STRATEGY && (STRATEGIES as readonly string[]).includes(env.OPENCODE_SWARM_STRATEGY.trim())) {
-    out.strategy = env.OPENCODE_SWARM_STRATEGY.trim()
+  if (env.OPENCODE_QUORUM_STRATEGY && (STRATEGIES as readonly string[]).includes(env.OPENCODE_QUORUM_STRATEGY.trim())) {
+    out.strategy = env.OPENCODE_QUORUM_STRATEGY.trim()
   }
-  const members = asList(env.OPENCODE_SWARM_MEMBERS)
+  const members = asList(env.OPENCODE_QUORUM_MEMBERS)
   if (members) out.members = members
-  if (env.OPENCODE_SWARM_AGGREGATOR) out.aggregator = env.OPENCODE_SWARM_AGGREGATOR
-  if (env.OPENCODE_SWARM_PLANNER) out.planner = env.OPENCODE_SWARM_PLANNER
-  if (env.OPENCODE_SWARM_JUDGE) out.judge = env.OPENCODE_SWARM_JUDGE
-  if (env.OPENCODE_SWARM_WORKER_MODE && (WORKER_MODES as readonly string[]).includes(env.OPENCODE_SWARM_WORKER_MODE.trim())) {
-    out.workerMode = env.OPENCODE_SWARM_WORKER_MODE.trim()
+  if (env.OPENCODE_QUORUM_AGGREGATOR) out.aggregator = env.OPENCODE_QUORUM_AGGREGATOR
+  if (env.OPENCODE_QUORUM_PLANNER) out.planner = env.OPENCODE_QUORUM_PLANNER
+  if (env.OPENCODE_QUORUM_JUDGE) out.judge = env.OPENCODE_QUORUM_JUDGE
+  if (env.OPENCODE_QUORUM_WORKER_MODE && (WORKER_MODES as readonly string[]).includes(env.OPENCODE_QUORUM_WORKER_MODE.trim())) {
+    out.workerMode = env.OPENCODE_QUORUM_WORKER_MODE.trim()
   }
-  const rounds = asNumber(env.OPENCODE_SWARM_ROUNDS)
+  const rounds = asNumber(env.OPENCODE_QUORUM_ROUNDS)
   if (rounds !== undefined) out.rounds = rounds
-  const copies = asNumber(env.OPENCODE_SWARM_COPIES)
+  const copies = asNumber(env.OPENCODE_QUORUM_COPIES)
   if (copies !== undefined) out.copies = copies
-  const concurrency = asNumber(env.OPENCODE_SWARM_CONCURRENCY)
+  const concurrency = asNumber(env.OPENCODE_QUORUM_CONCURRENCY)
   if (concurrency !== undefined) out.concurrency = concurrency
-  const autoMembers = asNumber(env.OPENCODE_SWARM_AUTO_MEMBERS)
+  const autoMembers = asNumber(env.OPENCODE_QUORUM_AUTO_MEMBERS)
   if (autoMembers !== undefined) out.autoMembers = autoMembers
-  const timeoutMs = asNumber(env.OPENCODE_SWARM_TIMEOUT_MS)
+  const timeoutMs = asNumber(env.OPENCODE_QUORUM_TIMEOUT_MS)
   if (timeoutMs !== undefined) out.timeoutMs = timeoutMs
-  const agentTimeoutMs = asNumber(env.OPENCODE_SWARM_AGENT_TIMEOUT_MS)
+  const agentTimeoutMs = asNumber(env.OPENCODE_QUORUM_AGENT_TIMEOUT_MS)
   if (agentTimeoutMs !== undefined) out.agentTimeoutMs = agentTimeoutMs
-  const maxOutputChars = asNumber(env.OPENCODE_SWARM_MAX_OUTPUT_CHARS)
+  const maxOutputChars = asNumber(env.OPENCODE_QUORUM_MAX_OUTPUT_CHARS)
   if (maxOutputChars !== undefined) out.maxOutputChars = maxOutputChars
-  const stream = asBool(env.OPENCODE_SWARM_STREAM)
+  const stream = asBool(env.OPENCODE_QUORUM_STREAM)
   if (stream !== undefined) out.streamToSession = stream
-  const tool = asBool(env.OPENCODE_SWARM_TOOL)
+  const tool = asBool(env.OPENCODE_QUORUM_TOOL)
   if (tool !== undefined) out.tool = tool
-  const command = asBool(env.OPENCODE_SWARM_COMMAND)
+  const command = asBool(env.OPENCODE_QUORUM_COMMAND)
   if (command !== undefined) out.command = command
-  const keepWorkerSessions = asBool(env.OPENCODE_SWARM_KEEP_WORKER_SESSIONS)
+  const keepWorkerSessions = asBool(env.OPENCODE_QUORUM_KEEP_WORKER_SESSIONS)
   if (keepWorkerSessions !== undefined) out.keepWorkerSessions = keepWorkerSessions
-  const debugLog = asBool(env.OPENCODE_SWARM_DEBUG_LOG)
+  const debugLog = asBool(env.OPENCODE_QUORUM_DEBUG_LOG)
   if (debugLog !== undefined) out.debugLog = debugLog
   return out
 }
@@ -225,7 +225,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.round(value)))
 }
 
-function normalize(config: SwarmConfig): SwarmConfig {
+function normalize(config: QuorumConfig): QuorumConfig {
   if (!(STRATEGIES as readonly string[]).includes(config.strategy)) config.strategy = DEFAULTS.strategy
   if (!(WORKER_MODES as readonly string[]).includes(config.workerMode)) config.workerMode = DEFAULTS.workerMode
   config.rounds = clamp(Number(config.rounds) || DEFAULTS.rounds, 1, 6)
@@ -243,15 +243,24 @@ function normalize(config: SwarmConfig): SwarmConfig {
 }
 
 export interface LoadedConfig {
-  config: SwarmConfig
+  config: QuorumConfig
   sources: string[]
 }
 
-/** The two files the dashboard and the loader agree on. */
+/**
+ * The two files the dashboard and the loader agree on.
+ *
+ * The plugin was called `swarm` before 1.1; a workspace that still has
+ * `swarm.json` keeps working rather than silently falling back to defaults.
+ */
 export function configFiles(directory?: string): { global: string; project?: string } {
+  const pick = (base: string, legacy: string) => (fs.existsSync(base) || !fs.existsSync(legacy) ? base : legacy)
+  const globalDir = path.join(os.homedir(), ".config", "opencode")
   return {
-    global: path.join(os.homedir(), ".config", "opencode", "swarm.json"),
-    project: directory ? path.join(directory, ".opencode", "swarm.json") : undefined,
+    global: pick(path.join(globalDir, "quorum.json"), path.join(globalDir, "swarm.json")),
+    project: directory
+      ? pick(path.join(directory, ".opencode", "quorum.json"), path.join(directory, ".opencode", "swarm.json"))
+      : undefined,
   }
 }
 
@@ -291,9 +300,9 @@ export function loadConfig(ctx: { location?: { directory?: string }; options?: u
 }
 
 export interface ConfigStore {
-  current(): SwarmConfig
+  current(): QuorumConfig
   sources(): string[]
-  reload(): SwarmConfig
+  reload(): QuorumConfig
 }
 
 /** Cheap change check so hand edits take effect without a restart. */
@@ -314,13 +323,13 @@ function fileStamps(directory?: string): string {
 
 export function createConfigStore(
   ctx: { location?: { directory?: string }; options?: unknown },
-  onReload?: (config: SwarmConfig, sources: string[]) => void,
+  onReload?: (config: QuorumConfig, sources: string[]) => void,
 ): ConfigStore {
   const directory = ctx.location?.directory
   let stamps = fileStamps(directory)
   let loaded = loadConfig(ctx)
 
-  const reread = (notify: boolean): SwarmConfig => {
+  const reread = (notify: boolean): QuorumConfig => {
     stamps = fileStamps(directory)
     loaded = loadConfig(ctx)
     if (notify) onReload?.(loaded.config, loaded.sources)
@@ -339,15 +348,19 @@ export function createConfigStore(
 
 /** Keeps the file self-documenting after the panel rewrites it. */
 const BANNER = [
-  "// swarm configuration — the Swarm panel writes this file, and the plugin",
-  "// re-reads it immediately. Reference: .opencode/plugins/swarm/README.md",
+  "// quorum configuration — the Quorum panel writes this file, and the plugin",
+  "// re-reads it immediately. Reference: .opencode/plugins/quorum/README.md",
   "",
 ].join("\n")
 
 /** Merges `patch` into the project config file, creating it when needed. */
 export function writeProjectConfig(directory: string | undefined, patch: Record<string, unknown>): string {
-  const file = configFiles(directory).project ?? path.join(process.cwd(), ".opencode", "swarm.json")
-  const existing = readJson(file)
+  // Always the current name: a legacy `swarm.json` is read, but the first write
+  // migrates the file rather than perpetuating the old name.
+  const file = directory
+    ? path.join(directory, ".opencode", "quorum.json")
+    : path.join(process.cwd(), ".opencode", "quorum.json")
+  const existing = readJson(file) ?? readJson(path.join(path.dirname(file), "swarm.json"))
   const merged = merge(isRecord(existing) ? existing : {}, patch)
   fs.mkdirSync(path.dirname(file), { recursive: true })
   // Write then rename so a concurrent read never sees a half-written file.
@@ -358,6 +371,6 @@ export function writeProjectConfig(directory: string | undefined, patch: Record<
 }
 
 /** Config without secrets, safe to log or send to a client. */
-export function redact(config: SwarmConfig): SwarmConfig {
+export function redact(config: QuorumConfig): QuorumConfig {
   return { ...config }
 }
