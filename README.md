@@ -160,11 +160,12 @@ skill into `.opencode/skills/`:
 
 ```sh
 # from a clone of this repository
-mkdir -p "<workspace>/.opencode/plugins"
-cp -r . "<workspace>/.opencode/plugins/swarm"
+git clone <this-repo-url> "<workspace>/.opencode/plugins/swarm"
 mkdir -p "<workspace>/.opencode/skills"
-cp -r skills/swarm "<workspace>/.opencode/skills/swarm"
+cp -r "<workspace>/.opencode/plugins/swarm/skills/swarm" "<workspace>/.opencode/skills/swarm"
 ```
+
+No dependencies to install — the plugin uses the runtime OpenCode provides.
 
 Restart OpenCode (or reload plugins). That is all: settings come from defaults
 until you create `.opencode/swarm.json` — start from `swarm.example.json`.
