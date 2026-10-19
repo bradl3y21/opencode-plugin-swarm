@@ -225,9 +225,12 @@ It patches by **appending**: every existing file in the archive keeps its exact
 offset, size and bytes, and the panel plus the patched `index.html` are written
 after the existing data. Nothing is moved or re-packed. (An earlier version
 re-packed the archive and recomputed every offset; that broke an app update,
-because an archive's recorded boundaries are not always a perfect tiling.) It
-verifies afterwards that no existing entry moved, and `installer-test.mjs`
-proves the whole thing on copies, including a deliberately malformed archive.
+because an archive's recorded boundaries are not always a perfect tiling.) One
+consequence worth knowing: the archive grows by roughly the size of the panel on
+each install, so `--uninstall` followed by a fresh `install.mjs` is the way to
+reclaim the space. It verifies afterwards that no existing entry moved, and
+`installer-test.mjs` proves the whole thing on copies, including a deliberately
+malformed archive.
 
 If you would rather not touch the app at all, or you want to iterate on the panel
 without restarting OpenCode, run the harness instead — it serves the real panel
