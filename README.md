@@ -394,6 +394,7 @@ smallest bill.
 | `rpc.ts` | The RPC contract shared by the dashboard and the terminal UI. |
 | `tui.ts` | Terminal panel (terminal client only). |
 | `log.ts` | `~/.local/share/opencode/log/quorum.log`. |
+| `history.ts` | Keeps finished runs in `~/.local/share/opencode/quorum-runs.json`. |
 | `desktop/install.mjs` | Adds the dashboard to `app.asar`, reversibly. |
 | `desktop/install-when-free.mjs` | Waits for the app to close, then installs by itself. |
 | `desktop/selftest.mjs` | Proves the archive writer cannot corrupt the app. |
@@ -415,9 +416,10 @@ smallest bill.
 - **Cancel works mid-flight.** A cancelled run stops, its in-flight steps are
   marked `cancelled` rather than quietly completing, and cancelling twice is a
   no-op.
-- **Run history is in memory.** It survives the session but not a plugin reload
-  or a service restart; `/quorum status` and the dashboard show what the current
-  process remembers.
+- **Run history survives a restart.** Finished runs are written to
+  `~/.local/share/opencode/quorum-runs.json`, the last 20 per directory, with
+  long outputs trimmed. A run that was still going when the process died is
+  shown as `interrupted by a restart` rather than spinning forever.
 - **`maxOutputChars` is a real cost control.** Every member's answer is pasted
   into the aggregator's prompt, so a chatty panel is expensive to merge.
 - **Timeouts cannot cancel a provider call.** A worker that times out is dropped

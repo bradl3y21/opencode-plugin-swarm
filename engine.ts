@@ -1,4 +1,5 @@
 import { type QuorumConfig, type Strategy, type WorkerMode } from "./config"
+import { createHistory, type RunHistory } from "./history"
 import { logFilePath } from "./log"
 import {
   autoRoster,
@@ -296,6 +297,7 @@ export class QuorumEngine {
   private readonly version: string
 
   private readonly runs = new Map<string, QuorumRun>()
+  private readonly history: RunHistory
   private readonly cancelled = new Set<string>()
   private readonly listeners = new Set<(run: QuorumRun) => void>()
   private modelsCache?: { at: number; models: ModelOption[] }
@@ -317,6 +319,8 @@ export class QuorumEngine {
     this.config = options.config
     this.sources = options.sources
     this.version = options.version
+    this.history = createHistory(options.ctx.location?.directory, (message) => this.log(message))
+    for (const run of this.history.load()) this.runs.set(run.id, run)
   }
 
   // ---- observation -------------------------------------------------------
@@ -1092,6 +1096,7 @@ export class QuorumEngine {
     }
     this.cancelled.delete(run.id)
     this.log(`run ${run.id} ${status} in ${run.ms}ms (${run.strategy})`)
+    this.history.save(this.runs.values())
     this.emit(run)
   }
 
